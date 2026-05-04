@@ -6,58 +6,73 @@ from gtts import gTTS
 import io
 import os
 
-# 1. පිටුවේ මූලික සැකසුම් - Responsive layout එක සඳහා 'wide' mode භාවිතා කර ඇත
+# 1. පිටුවේ මූලික සැකසුම් - පූර්ණ පළල (Wide) භාවිතා කර ඇත
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="wide")
 
-# 2. Premium & Responsive UI පෙනුම (CSS)
+# 2. CSS හරහා Full Screen Optimization සහ Responsive Design
 st.markdown("""
     <style>
-    /* මූලික පසුබිම සහ අකුරු */
+    /* මුළු Screen එකේම ඉඩ ලබා ගැනීම */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        max-width: 100% !important;
+    }
+    
     .stApp { background-color: #050505; color: white; }
     
-    /* Responsive Header */
+    /* Header අකුරු Screen එකේ ප්‍රමාණය අනුව වෙනස් වීම */
     h1 { 
         background: linear-gradient(90deg, #ffffff, #515ada); 
         -webkit-background-clip: text; 
         -webkit-text-fill-color: transparent; 
-        font-size: clamp(2rem, 5vw, 3.5rem); 
+        font-size: clamp(1.8rem, 8vw, 3rem); 
         text-align: center;
-        font-weight: bold;
+        margin-bottom: 0px;
     }
     
-    /* Chat Messages */
+    /* Chat Box එක Screen එකට ගැළපීම */
     .stChatMessage { 
-        border-radius: 15px; 
+        border-radius: 12px; 
         border: 1px solid #1e1e2e; 
         background-color: #0d1117; 
         margin-bottom: 10px;
+        width: 100% !important;
     }
 
-    /* Sidebar Styling */
+    /* Sidebar පෙනුම */
     [data-testid="stSidebar"] {
         background-color: #0d1117;
         border-right: 1px solid #1e1e2e;
+        width: 260px !important;
     }
 
-    /* Mobile optimization for Input box */
-    .stChatInputContainer {
-        padding-bottom: clamp(10px, 5vh, 30px);
+    /* ලෝගෝ එක පාලනය */
+    .logo-img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        border-radius: 50%;
+        border: 2px solid #515ada;
     }
-
-    /* ලෝගෝ එක රවුම් කිරීමට */
-    .round-logo-container {
-        display: flex;
-        justify-content: center;
-        padding: 20px 0;
+    
+    /* Footer */
+    .footer-text {
+        text-align: center;
+        color: #444;
+        font-size: 0.8rem;
+        margin-top: 50px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. රවුම් ලෝගෝ එක සකසන Function එක
+# 3. රවුම් ලෝගෝ එක හදන Function එක
 def get_round_logo(img_path):
     try:
         img = Image.open(img_path).convert("RGBA")
-        size = (300, 300)
+        size = (250, 250)
         img = img.resize(size, Image.LANCZOS)
         mask = Image.new('L', size, 0)
         draw = ImageDraw.Draw(mask)
@@ -65,10 +80,10 @@ def get_round_logo(img_path):
         output = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))
         output.putalpha(mask)
         return output
-    except Exception:
+    except:
         return None
 
-# 4. Voice Function (කටහඬ නිපදවීම)
+# 4. Voice Function
 def speak_text(text):
     try:
         is_sinhala = any("\u0d80" <= char <= "\u0dff" for char in text)
@@ -83,90 +98,74 @@ def speak_text(text):
     except:
         pass
 
-# --- Sidebar (Menu Bar) ---
+# --- Sidebar Content ---
 with st.sidebar:
-    st.markdown('<div class="round-logo-container">', unsafe_allow_html=True)
     if os.path.exists("logo.png"):
         round_img = get_round_logo("logo.png")
         if round_img:
-            st.image(round_img, width=120)
-    else:
-        st.title("DX")
-    st.markdown('</div>', unsafe_allow_html=True)
+            st.image(round_img, use_container_width=True)
     
-    st.markdown("<h3 style='text-align: center;'>DiNuX AI Panel</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center;'>Menu</h3>", unsafe_allow_html=True)
     st.markdown("---")
-    
-    # විශේෂාංග පාලනය
-    voice_on = st.toggle("Voice Response (කටහඬ)", value=False)
-    
+    voice_on = st.toggle("Voice Response", value=False)
     st.markdown("---")
-    st.write("**Developer:** Dinush Dilhara")
-    st.write("**Version:** 3.0 (Stable)")
+    st.write("Device Optimized: Active ✅")
     
-    if st.button("Clear Conversation", use_container_width=True):
+    if st.button("Clear History", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# --- Main UI Content ---
-# ඕනෑම Device එකක මැදට වන්නට Content එක තැබීම
-main_col1, main_col2, main_col3 = st.columns([1, 4, 1])
+# --- Main App ---
+st.markdown("<h1>DiNuX AI</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #888;'>Think • Learn • Evolve</p>", unsafe_allow_html=True)
 
-with main_col2:
-    st.markdown("<h1>DiNuX AI</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #808495;'>Think • Learn • Evolve</p>", unsafe_allow_html=True)
-    st.markdown("---")
+# Groq Client
+client = Groq(api_key="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")
 
-    # Groq Client (ඔයාගේ API Key එක)
-    client = Groq(api_key="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")
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+# මැසේජ් පෙන්වන කොටස
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-    # කලින් කළ සංවාද පෙන්වීම
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+# Chat Input
+if prompt := st.chat_input("මෙතැනින් අසන්න..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-    # Chat Input
-    if prompt := st.chat_input("DiNuX ගෙන් ඕනෑම දෙයක් අසන්න..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    with st.chat_message("assistant"):
+        # ඉල්ලීම පරිදි සැකසූ නව System Instruction
+        system_instruction = """
+        ඔබේ නම DiNuX. ඔබ ඉතාමත් බුද්ධිමත් සිංහල AI සහායකයෙකි.
+        
+        වැදගත් නීති:
+        1. කවුරුන් හෝ 'ඔබව නිර්මාණය කළේ කවුද?' (Who created you? / Developer?) වැනි ප්‍රශ්නයක් ඇසුවහොත් පමණක් 'මාව නිර්මාණය කළේ දක්ෂ Developer කෙනෙකු වන Dinush Dilhara' බව පවසන්න. අනෙක් සාමාන්‍ය ප්‍රශ්න වලදී මෙය පවසන්න එපා.
+        2. සෑම ප්‍රශ්නයකටම ගැඹුරින් සිතා 100% නිවැරදි තර්කානුකූල පිළිතුරු ලබා දෙන්න.
+        3. මනුෂ්‍ය හැඟීම් තේරුම් ගෙන ඉතා ස්වභාවික සිංහලෙන් (Unicode) කතා කරන්න.
+        4. පරිශීලකයා Singlish භාවිතා කළත් ඔබ ස්වභාවික සිංහලෙන් පිළිතුරු දෙන්න.
+        """
+        
+        full_messages = [{"role": "system", "content": system_instruction}]
+        for m in st.session_state.messages:
+            full_messages.append({"role": m["role"], "content": m["content"]})
 
-        with st.chat_message("assistant"):
-            # ඉතාමත් දියුණු සහ සංවේදී System Instruction
-            system_instruction = """
-            ඔබේ නම DiNuX. ඔබව නිර්මාණය කළේ දක්ෂ Developer කෙනෙකු වන 'Dinush Dilhara' විසින්ය.
+        try:
+            chat_completion = client.chat.completions.create(
+                messages=full_messages,
+                model="llama-3.3-70b-versatile",
+                temperature=0.7,
+            )
+            response = chat_completion.choices[0].message.content
+            st.markdown(response)
             
-            පිළිතුරු සැපයීමේදී:
-            1. සැමවිටම ඉතාමත් ස්වභාවික 'සිංහල අකුරෙන්' පිළිතුරු දෙන්න.
-            2. 'Dinush Dilhara' ඔබේ නිර්මාණකරු බව ඕනෑම අවස්ථාවක ආඩම්බරයෙන් පවසන්න.
-            3. පරිශීලකයාගේ ප්‍රශ්න ගැඹුරින් විශ්ලේෂණය කර 100% නිවැරදි සහ තර්කානුකූල පිළිතුරු ලබා දෙන්න.
-            4. මනුෂ්‍ය හැඟීම් (Emotions) හඳුනාගෙන ඉතා මිත්‍රශීලීව සහ ගෞරවනීයව කතා කරන්න.
-            5. සිංග්ලිෂ් තේරුම් ගෙන ඉතා හොඳින් සිංහල හසුරුවන්න.
-            """
+            if voice_on:
+                speak_text(response)
             
-            full_messages = [{"role": "system", "content": system_instruction}]
-            for m in st.session_state.messages:
-                full_messages.append({"role": m["role"], "content": m["content"]})
+            st.session_state.messages.append({"role": "assistant", "content": response})
+        except Exception as e:
+            st.error("Error occurred. Please try again.")
 
-            try:
-                chat_completion = client.chat.completions.create(
-                    messages=full_messages,
-                    model="llama-3.3-70b-versatile",
-                    temperature=0.7,
-                )
-                response = chat_completion.choices[0].message.content
-                st.markdown(response)
-                
-                # Voice සක්‍රීය නම් පමණක් ක්‍රියාත්මක වේ
-                if voice_on:
-                    speak_text(response)
-                
-                st.session_state.messages.append({"role": "assistant", "content": response})
-            except Exception as e:
-                st.error(f"Error: {e}")
-
-    # Footer
-    st.markdown("<br><br><p style='text-align: center; color: gray; font-size: 0.8em;'>© 2026 Crafted by Dinush Dilhara | THINK • LEARN • EVOLVE</p>", unsafe_allow_html=True)
+st.markdown("<div class='footer-text'>© 2026 Developed by Dinush Dilhara</div>", unsafe_allow_html=True)
