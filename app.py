@@ -4,77 +4,79 @@ import base64
 from gtts import gTTS
 import io
 
-# 1. පද්ධති සැකසුම් (Ultra-Wide Layout)
+# 1. Page Config (Full Dynamic Layout)
 st.set_page_config(
-    page_title="DiNuX Quantum OS",
-    page_icon="💠",
+    page_title="DiNuX Advanced AI",
+    page_icon="🌌",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2. FULLY ADVANCED UI (CSS Injection)
+# 2. THE ADVANCED GEMINI-STYLE UI
 st.markdown("""
     <style>
-    /* Dark Space Theme */
+    /* Main Background with a subtle gradient */
     .stApp {
-        background: radial-gradient(circle at top right, #1a1a2e, #16213e, #0f3460);
-        color: #e94560;
-        font-family: 'Inter', sans-serif;
+        background-color: #0b0b0b;
+        background-image: radial-gradient(circle at 50% -20%, #1a1a3a 0%, #0b0b0b 80%);
+        color: #e3e3e3;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* Invisible Header & Footer */
     header, footer {visibility: hidden;}
 
-    /* Modern Sidebar Styling */
+    /* Sidebar - Deep Glass Effect */
     [data-testid="stSidebar"] {
-        background-color: rgba(15, 52, 96, 0.8) !important;
-        backdrop-filter: blur(15px);
-        border-right: 1px solid #e94560;
+        background-color: rgba(15, 15, 15, 0.95) !important;
+        border-right: 1px solid #2d2d2d;
     }
 
-    /* Glassmorphism Chat Bubbles */
+    /* Message Containers (Clean & Modern) */
     .stChatMessage {
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(10px);
-        border-radius: 20px !important;
-        border: 1px solid rgba(233, 69, 96, 0.3) !important;
-        margin-bottom: 20px !important;
-        padding: 20px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        background-color: transparent !important;
+        border: none !important;
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 850px;
+        margin: auto;
     }
 
-    /* Floating Futuristic Input */
+    /* Glowing Text & Icons */
+    .gemini-gradient {
+        background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+    }
+
+    /* Fixed Input Bar - Floating & Minimalist */
     div[data-testid="stChatInput"] {
         position: fixed;
-        bottom: 40px;
-        background: rgba(22, 33, 62, 0.95) !important;
-        border: 2px solid #e94560 !important;
-        border-radius: 50px !important;
-        padding: 10px 20px !important;
-        box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60% !important;
+        background: #1e1e1e !important;
+        border: 1px solid #3c4043 !important;
+        border-radius: 32px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
-    /* Glowing Text Effect */
-    .glow-text {
-        color: #ffffff;
-        text-shadow: 0 0 10px #e94560, 0 0 20px #e94560;
-        font-weight: 800;
-        text-align: center;
-        font-size: 3rem;
+    /* Hide User Icon Default Styling */
+    [data-testid="stChatMessageAvatarUser"] {
+        background-color: #4285f4 !important;
     }
-
-    /* GitHub Logo In Sidebar */
-    .sidebar-logo {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        width: 100px;
-        filter: drop-shadow(0 0 10px #e94560) invert(1);
+    
+    /* Code block styling */
+    code {
+        color: #ff79c6 !important;
+        background-color: #1e1e1e !important;
+        border-radius: 5px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Audio Engine
+# 3. Core Engine Functions
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -85,77 +87,81 @@ def play_voice(text):
         st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
     except: pass
 
-# --- ADVANCED SIDEBAR MENU ---
+# --- LEFT NAVIGATION (MINIMAL) ---
 with st.sidebar:
-    st.markdown('<img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" class="sidebar-logo">', unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align:center; color:white;'>DiNuX OS</h2>", unsafe_allow_html=True)
+    st.markdown("<br><h2 style='text-align:center;' class='gemini-gradient'>DiNuX AI</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#8e8e8e;'>v6.0 Official Build</p>", unsafe_allow_html=True)
     st.markdown("---")
     
-    with st.expander("🛡️ Core Intelligence", expanded=True):
-        mode = st.select_slider("Select Power", options=["Standard", "Advanced", "Quantum"])
-        api_status = st.success("System: Online ✅")
-    
-    with st.expander("⚡ System Controls"):
-        voice_on = st.toggle("Holographic Voice", value=True)
-        if st.button("Purge Memory 🚮", use_container_width=True):
-            st.session_state.messages = []
-            st.rerun()
+    # Feature Toggles
+    with st.container():
+        st.markdown("#### System Configurations")
+        is_voice = st.toggle("Audio Feedback 🔊", value=True)
+        is_creative = st.toggle("Creative Mode ✨", value=False)
+        
+    st.markdown("<br>" * 10)
+    if st.button("New Chat +", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
 
-    st.markdown("---")
-    st.caption("Developed by: Dinush Dilhara")
-    st.caption("KDD Studio | Alpha v6.0")
-
-# --- AI CORE LOGIC ---
+# --- MAIN INTERFACE ---
 client = Groq(api_key="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")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Welcome UI
+# Welcome Screen (Only shows at the start)
 if not st.session_state.messages:
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown("<h1 class='glow-text'>Quantum DiNuX</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #8b949e;'>System Initialized. Awaiting your command, Dinush.</p>", unsafe_allow_html=True)
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    st.markdown("<h1 style='font-size: 3.5rem; margin-left: 10%;'>Hello, <span class='gemini-gradient'>Dinush</span></h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #444746; margin-left: 10%;'>How can I help you today?</h2>", unsafe_allow_html=True)
 
-# Render Chat History
+# Display Messages
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# User Command Input
-if prompt := st.chat_input("Enter command..."):
+# Input Handling
+if prompt := st.chat_input("Ask DiNuX..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # Advanced Logic Instruction
-        sys_instr = """
-        ඔබේ නම DiNuX. ඔබ ලොව බලවත්ම Quantum AI පද්ධතියයි. 
-        නිර්මාණය කළේ Dinush Dilhara.
-        භාෂාව: ඉතාමත් ගාම්භීර සහ වෘත්තීය සිංහල.
-        ඔබේ පිළිතුරු කෙටි, තර්කානුකූල සහ අතිශය බුද්ධිමත් විය යුතුය.
+        # Advanced Logic Setting
+        temp = 0.7 if is_creative else 0.2
+        
+        sys_prompt = f"""
+        ඔබේ නම DiNuX. නිර්මාණය කළේ Dinush Dilhara (KDD Studio).
+        ඔබ අතිශය බුද්ධිමත්, වෘත්තීය සහ මිත්‍රශීලී AI සහායකයෙකි.
+        භාෂාව: ගෞරවනීය සහ පිරිසිදු සිංහල.
         """
         
-        model_name = "llama-3.1-70b-versatile" if mode == "Quantum" else "llama-3.1-8b-instant"
-        
-        history = [{"role": "system", "content": sys_instr}] + st.session_state.messages
+        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
 
         try:
-            with st.status("Processing Data...", expanded=False):
-                chat = client.chat.completions.create(
-                    messages=history,
-                    model=model_name,
-                    temperature=0.2
-                )
-                res = chat.choices[0].message.content
+            # Thinking animation style
+            placeholder = st.empty()
+            full_response = ""
             
-            st.markdown(res)
+            completion = client.chat.completions.create(
+                messages=history,
+                model="llama-3.1-70b-versatile",
+                temperature=temp,
+                stream=True
+            )
             
-            if voice_on:
-                play_voice(res)
+            for chunk in completion:
+                if chunk.choices[0].delta.content:
+                    full_response += chunk.choices[0].delta.content
+                    placeholder.markdown(full_response + "▌")
+            
+            placeholder.markdown(full_response)
+            
+            if is_voice:
+                play_voice(full_response)
                 
-            st.session_state.messages.append({"role": "assistant", "content": res})
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
             
-        except Exception:
-            st.error("Connection Interrupted. Retry command.")
+        except Exception as e:
+            st.error(f"System Error: {e}")
