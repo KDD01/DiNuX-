@@ -6,166 +6,164 @@ from gtts import gTTS
 import io
 import os
 
-# 1. පිටුවේ මූලික සැකසුම් - පූර්ණ පළල (Wide) භාවිතා කර ඇත
-st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="wide")
+# 1. පිටුවේ මූලික සැකසුම් - Responsive බව සඳහා මූලික පියවර
+st.set_page_config(
+    page_title="DiNuX AI", 
+    page_icon="🤖", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# 2. CSS හරහා Full Screen Optimization සහ Responsive Design
+# 2. Advanced CSS for Desktop/Mobile Optimization & No-Zoom UI
 st.markdown("""
     <style>
-    /* මුළු Screen එකේම ඉඩ ලබා ගැනීම */
+    /* මුළු Screen එකම පාවිච්චි කිරීම සහ Zoom පෙනුම ඉවත් කිරීම */
+    html, body, [data-testid="stAppViewContainer"] {
+        background-color: #050505;
+        color: #e0e0e0;
+    }
+    
     .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        max-width: 100% !important;
+        max-width: 1100px !important; /* Laptop වලදී ඕනෑවට වඩා පළල් වීම වැළැක්වීමට */
+        padding: 2rem 1rem !important;
+        margin: auto;
     }
-    
-    .stApp { background-color: #050505; color: white; }
-    
-    /* Header අකුරු Screen එකේ ප්‍රමාණය අනුව වෙනස් වීම */
-    h1 { 
-        background: linear-gradient(90deg, #ffffff, #515ada); 
-        -webkit-background-clip: text; 
-        -webkit-text-fill-color: transparent; 
-        font-size: clamp(1.8rem, 8vw, 3rem); 
+
+    /* Header Styling */
+    h1 {
+        font-size: clamp(1.5rem, 5vw, 2.8rem);
+        font-weight: 800;
+        background: linear-gradient(135deg, #ffffff 30%, #515ada 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-bottom: 0px;
-    }
-    
-    /* Chat Box එක Screen එකට ගැළපීම */
-    .stChatMessage { 
-        border-radius: 12px; 
-        border: 1px solid #1e1e2e; 
-        background-color: #0d1117; 
-        margin-bottom: 10px;
-        width: 100% !important;
+        letter-spacing: -1px;
     }
 
-    /* Sidebar පෙනුම */
+    /* Chat Bubbles - modern flat design */
+    .stChatMessage {
+        background-color: #0d1117 !important;
+        border: 1px solid #1e1e2e !important;
+        border-radius: 12px !important;
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    /* Sidebar and Menu */
     [data-testid="stSidebar"] {
-        background-color: #0d1117;
+        background-color: #0a0c10 !important;
         border-right: 1px solid #1e1e2e;
-        width: 260px !important;
     }
 
-    /* ලෝගෝ එක පාලනය */
-    .logo-img {
+    /* Input Box optimization */
+    .stChatInputContainer {
+        border-radius: 12px !important;
+        background-color: transparent !important;
+    }
+
+    /* Scrollbar සකස් කිරීම */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: #1e1e2e; border-radius: 10px; }
+
+    /* පින්තූරය රවුම් කරන CSS */
+    .sidebar-logo {
         display: block;
-        margin-left: auto;
-        margin-right: auto;
+        margin: 0 auto;
         border-radius: 50%;
         border: 2px solid #515ada;
-    }
-    
-    /* Footer */
-    .footer-text {
-        text-align: center;
-        color: #444;
-        font-size: 0.8rem;
-        margin-top: 50px;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # 3. රවුම් ලෝගෝ එක හදන Function එක
-def get_round_logo(img_path):
+def make_circle(img_path):
     try:
         img = Image.open(img_path).convert("RGBA")
-        size = (250, 250)
-        img = img.resize(size, Image.LANCZOS)
-        mask = Image.new('L', size, 0)
+        mask = Image.new('L', img.size, 0)
         draw = ImageDraw.Draw(mask)
-        draw.ellipse((0, 0) + size, fill=255)
-        output = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))
-        output.putalpha(mask)
-        return output
-    except:
-        return None
+        draw.ellipse((0, 0) + img.size, fill=255)
+        img.putalpha(mask)
+        return img
+    except: return None
 
-# 4. Voice Function
-def speak_text(text):
+# 4. Voice Engine (සිංහල/English)
+def play_audio(text):
     try:
-        is_sinhala = any("\u0d80" <= char <= "\u0dff" for char in text)
-        lang = 'si' if is_sinhala else 'en'
+        lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
         tts = gTTS(text=text, lang=lang, slow=False)
-        fp = io.BytesIO()
-        tts.write_to_fp(fp)
-        fp.seek(0)
-        b64 = base64.b64encode(fp.read()).decode()
-        md = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">'
-        st.markdown(md, unsafe_allow_html=True)
-    except:
-        pass
+        audio_io = io.BytesIO()
+        tts.write_to_fp(audio_io)
+        b64 = base64.b64encode(audio_io.getvalue()).decode()
+        st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
+    except: pass
 
-# --- Sidebar Content ---
+# --- UI Layout ---
 with st.sidebar:
     if os.path.exists("logo.png"):
-        round_img = get_round_logo("logo.png")
-        if round_img:
-            st.image(round_img, use_container_width=True)
+        st.image(make_circle("logo.png"), width=120)
+    else:
+        st.markdown("<h2 style='text-align:center;'>DX</h2>", unsafe_allow_html=True)
     
-    st.markdown("<h3 style='text-align: center;'>Menu</h3>", unsafe_allow_html=True)
     st.markdown("---")
-    voice_on = st.toggle("Voice Response", value=False)
-    st.markdown("---")
-    st.write("Device Optimized: Active ✅")
+    st.markdown("### Settings")
+    is_voice = st.checkbox("Enable Voice Response", value=False)
     
-    if st.button("Clear History", use_container_width=True):
+    st.markdown("---")
+    st.caption("Developer: Dinush Dilhara")
+    if st.button("Reset Conversation", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# --- Main App ---
+# Main Title
 st.markdown("<h1>DiNuX AI</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #888;'>Think • Learn • Evolve</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#8b949e; font-size:0.9rem;'>Advanced Sinhala Reasoning Model</p>", unsafe_allow_html=True)
 
-# Groq Client
+# Client setup
 client = Groq(api_key="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")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# මැසේජ් පෙන්වන කොටස
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+# Display history
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-# Chat Input
+# User Input
 if prompt := st.chat_input("මෙතැනින් අසන්න..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # ඉල්ලීම පරිදි සැකසූ නව System Instruction
-        system_instruction = """
-        ඔබේ නම DiNuX. ඔබ ඉතාමත් බුද්ධිමත් සිංහල AI සහායකයෙකි.
+        # දිනුෂ්, මේ තමයි එයාගේ මොළය (The Brain)
+        sys_prompt = """
+        ඔබේ නම DiNuX. ඔබව නිර්මාණය කළේ 'Dinush Dilhara' විසින්ය.
         
-        වැදගත් නීති:
-        1. කවුරුන් හෝ 'ඔබව නිර්මාණය කළේ කවුද?' (Who created you? / Developer?) වැනි ප්‍රශ්නයක් ඇසුවහොත් පමණක් 'මාව නිර්මාණය කළේ දක්ෂ Developer කෙනෙකු වන Dinush Dilhara' බව පවසන්න. අනෙක් සාමාන්‍ය ප්‍රශ්න වලදී මෙය පවසන්න එපා.
-        2. සෑම ප්‍රශ්නයකටම ගැඹුරින් සිතා 100% නිවැරදි තර්කානුකූල පිළිතුරු ලබා දෙන්න.
-        3. මනුෂ්‍ය හැඟීම් තේරුම් ගෙන ඉතා ස්වභාවික සිංහලෙන් (Unicode) කතා කරන්න.
-        4. පරිශීලකයා Singlish භාවිතා කළත් ඔබ ස්වභාවික සිංහලෙන් පිළිතුරු දෙන්න.
+        උපදෙස්:
+        1. කර්තෘත්වය: කවුරුන් හෝ ඔබව නිර්මාණය කළේ කවුදැයි ඇසුවහොත් පමණක් 'මාව නිර්මාණය කළේ Dinush Dilhara' බව පවසන්න.
+        2. භාෂාව: පරිශීලකයා Singlish/English වලින් ලියූවත්, ඔබ පිළිතුරු සැපයිය යුත්තේ ඉතාමත් පිරිසිදු, ව්‍යාකරණානුකූල සහ ස්වභාවික සිංහල භාෂාවෙනි.
+        3. තර්කනය: ඕනෑම ප්‍රශ්නයක් ගැඹුරින් විශ්ලේෂණය කරන්න. කෙටි පිළිතුරු වෙනුවට කරුණු සහිතව, තර්කානුකූලව (Deep Logic) පිළිතුරු දෙන්න.
+        4. හැඟීම්: පරිශීලකයාගේ මානසිකත්වය හඳුනාගෙන ඉතාමත් කාරුණිකව සහ සංවේදීව සහාය වන්න.
+        5. ප්‍රායෝගික බව: විද්‍යාත්මක, තාක්ෂණික හෝ සාමාන්‍ය දැනුම පිළිබඳ ප්‍රශ්නවලදී 100% නිවැරදි දත්ත ලබා දෙන්න.
         """
         
-        full_messages = [{"role": "system", "content": system_instruction}]
-        for m in st.session_state.messages:
-            full_messages.append({"role": m["role"], "content": m["content"]})
+        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
 
         try:
-            chat_completion = client.chat.completions.create(
-                messages=full_messages,
+            chat = client.chat.completions.create(
+                messages=history,
                 model="llama-3.3-70b-versatile",
-                temperature=0.7,
+                temperature=0.6, # පිළිතුරු වල නිරවද්‍යතාවය වැඩි කිරීමට
             )
-            response = chat_completion.choices[0].message.content
-            st.markdown(response)
+            res = chat.choices[0].message.content
+            st.markdown(res)
             
-            if voice_on:
-                speak_text(response)
-            
-            st.session_state.messages.append({"role": "assistant", "content": response})
-        except Exception as e:
-            st.error("Error occurred. Please try again.")
+            if is_voice: play_audio(res)
+            st.session_state.messages.append({"role": "assistant", "content": res})
+        except:
+            st.error("දෝෂයක් ඇති විය. කරුණාකර නැවත උත්සාහ කරන්න.")
 
-st.markdown("<div class='footer-text'>© 2026 Developed by Dinush Dilhara</div>", unsafe_allow_html=True)
+# Footer
+st.markdown("<div style='text-align:center; padding:20px; color:#484f58; font-size:0.75rem;'>© 2026 Designed by Dinush Dilhara</div>", unsafe_allow_html=True)
