@@ -5,58 +5,59 @@ from gtts import gTTS
 import io
 import time
 
-# 1. පද්ධති සැකසුම් (Page Configuration)
+# 1. Page Configuration
 st.set_page_config(
-    page_title="DiNuX AI Pro",
-    page_icon="✨",
+    page_title="DiNuX Quantum v5.0",
+    page_icon="💠",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# 2. උසස් UI නිර්මාණය (Advanced CSS Customization)
+# 2. GitHub Style & Advanced UI Customization
 st.markdown("""
     <style>
-    /* මුළු පද්ධතියේම පසුබිම සහ අකුරු */
+    @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800&display=swap');
+
     .stApp {
-        background-color: #0d0d0e;
-        color: #ffffff;
-        font-family: 'Inter', sans-serif;
+        background-color: #0d1117; /* GitHub Dark Background */
+        color: #c9d1d9;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
     header, footer {visibility: hidden;}
 
-    /* වම් පස Expandable Menu එකේ පෙනුම */
+    /* Sidebar/Menu Design */
     [data-testid="stSidebar"] {
-        background-color: #161719 !important;
-        border-right: 1px solid #2d2f31;
+        background-color: #161b22 !important;
+        border-right: 1px solid #30363d;
+        width: 310px !important;
     }
 
-    /* ලෝගෝ එක සහ නම සඳහා වන සැකසුම් */
-    .logo-container {
+    /* Logo & Name Styling */
+    .brand-section {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        margin-bottom: 2rem;
-        padding: 10px;
-    }
-
-    .logo-img {
-        width: 80px;
-        border-radius: 50%;
-        border: 2px solid #4285f4;
+        padding: 20px 0;
         margin-bottom: 10px;
     }
 
+    .github-logo {
+        width: 70px;
+        filter: invert(1); /* Makes the logo white */
+        margin-bottom: 15px;
+    }
+
     .brand-name {
-        font-size: 1.8rem;
+        font-size: 2.2rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
+        letter-spacing: -1px;
+        background: linear-gradient(135deg, #58a6ff, #bc8cff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
 
-    /* Chat Input එක පතුලේ ස්ථාවරව තැබීම */
+    /* Fixed Bottom Input Bar */
     div[data-testid="stChatInput"] {
         position: fixed;
         bottom: 30px;
@@ -64,22 +65,31 @@ st.markdown("""
         transform: translateX(-50%);
         width: 85% !important;
         max-width: 800px !important;
-        background: #1e1f20 !important;
-        border-radius: 30px !important;
-        border: 1px solid #3c4043 !important;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        background: #161b22 !important;
+        border-radius: 12px !important;
+        border: 1px solid #30363d !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         z-index: 1000;
     }
 
-    /* Message Bubbles */
+    /* Chat Messages */
     [data-testid="stChatMessage"] {
-        border-bottom: 1px solid #1f1f1f !important;
+        background-color: transparent !important;
+        border-bottom: 1px solid #21262d !important;
         padding: 1.5rem 0 !important;
+    }
+
+    /* Sidebar Expander Customization */
+    .st-expander {
+        background-color: #0d1117 !important;
+        border: 1px solid #30363d !important;
+        border-radius: 8px !important;
+        margin-bottom: 10px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. හඬ පද්ධතිය (Voice Engine)
+# 3. Core Engine Functions
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -90,91 +100,97 @@ def play_voice(text):
         st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
     except: pass
 
-# --- වම් පස මෙනුව (Left Expandable Menu) ---
+# --- LEFT SIDEBAR: EXPANDABLE MENU ---
 with st.sidebar:
-    # ලෝගෝ සහ නම ඇතුළත් කොටස
+    # Branding Section with GitHub Logo
     st.markdown("""
-        <div class="logo-container">
-            <img src="https://img.icons8.com/fluency/96/artificial-intelligence.png" class="logo-img">
-            <div class="brand-name">DiNuX PRO</div>
+        <div class="brand-section">
+            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" class="github-logo">
+            <div class="brand-name">DiNuX</div>
         </div>
     """, unsafe_allow_html=True)
     
+    st.markdown("<p style='text-align:center; color:#8b949e; font-size:0.9rem;'>Powered by KDD Studio</p>", unsafe_allow_html=True)
     st.markdown("---")
     
-    # විශේෂාංග (Features)
-    with st.expander("🛠️ AI පද්ධති මෙවලම්", expanded=True):
-        ai_mode = st.selectbox("Intelligence Mode", ["Professional Logic", "Creative Writing", "Code Assistant"])
-        web_search = st.toggle("Live Web Search 🌐", value=False)
+    # Advanced Features Menu
+    with st.expander("🛠️ Intelligence Tools", expanded=True):
+        ai_mode = st.selectbox("Current Mode", ["Logical Reasoning", "Coding Specialist", "Creative Content"])
+        web_access = st.toggle("Live Data Access 🌐", value=False)
     
-    with st.expander("🎨 මාධ්‍ය සහ හඬ"):
-        voice_on = st.toggle("Enable Voice Response 🔊", value=False)
-        img_gen = st.toggle("Image Generation Mode 🖼️", value=False)
+    with st.expander("🔊 Media & Audio"):
+        voice_on = st.toggle("Voice Responses 🔊", value=False)
+        st.info("සිංහල සහ English භාෂා දෙකම සහාය දක්වයි.")
 
-    with st.expander("⚙️ පාලන සැකසුම්"):
-        if st.button("කතාබහ මකා දමන්න (Clear) 🗑️", use_container_width=True):
+    with st.expander("⚙️ Advanced Settings"):
+        model_power = st.select_slider("AI Power Level", options=["Base", "Pro", "Ultra"])
+        if st.button("Reset Session 🗑️", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
-    
-    st.markdown("---")
-    st.caption("Developed by Dinush Dilhara")
-    st.caption("KDD Studio | v4.5 Platinum")
 
-# --- AI ප්‍රධාන ක්‍රියාකාරීත්වය ---
+    st.markdown("---")
+    st.caption("Developer: Dinush Dilhara")
+    st.caption("Build: 5.0.0 Stable | GitHub Edition")
+
+# --- AI LOGIC CENTER ---
 client = Groq(api_key="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")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# පිළිගැනීමේ පණිවිඩය (Welcome UI)
+# Dynamic Welcome Header
 if not st.session_state.messages:
-    st.markdown(f"<h1 style='text-align: center; margin-top: 5rem;'>ආයුබෝවන්, <span class='brand-name'>දිනුෂ්</span></h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #9aa0a6;'>වෘත්තීය මට්ටමේ AI අත්දැකීමක් සඳහා ඔබ සූදානම්ද?</p>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align: center; margin-top: 5rem;'>Welcome, <span class='brand-name'>Dinush</span></h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #8b949e;'>බුද්ධිමත් සහ තර්කානුකූල පිළිතුරු සඳහා ඔබේ ගැටලුව මෙහි සඳහන් කරන්න.</p>", unsafe_allow_html=True)
 
-# පණිවිඩ දර්ශනය කිරීම
+# Message Rendering
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# පරිශීලකයාගෙන් දත්ත ලබා ගැනීම
-if prompt := st.chat_input("මෙහි විමසන්න..."):
+# User Input Logic
+if prompt := st.chat_input("Ask DiNuX anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # වෘත්තීය මට්ටමේ උපදෙස් (System Instructions)
-        sys_msg = f"""
-        ඔබේ නම DiNuX. ඔබව නිර්මාණය කළේ Dinush Dilhara (KDD Studio).
-        වත්මන් මාදිලිය: {ai_mode}.
+        # System Configuration
+        sys_prompt = f"""
+        ඔබේ නම DiNuX. නිර්මාණය කළේ Dinush Dilhara (KDD Studio).
+        ඔබ අතිශය බුද්ධිමත් සහ වෘත්තීය AI සහායකයෙකි.
+        භාෂාව: ඉතාමත් වෘත්තීය සිංහල (Professional Sinhala).
         නීති:
-        - ඉතාමත් වෘත්තීය සහ තර්කානුකූල සිංහල භාෂාව භාවිතා කරන්න.
-        - අනවශ්‍ය විස්තර ඉවත් කර කෙලින්ම කරුණු ඉදිරිපත් කරන්න.
-        - පිරිසිදු ව්‍යාකරණ භාවිතා කරන්න.
+        - සැමවිටම තර්කානුකූල පදනම (Logic) මත පිළිතුරු දෙන්න.
+        - අනවශ්‍ය වැල්වටාරම් නැතිව කෙලින්ම කරුණු ඉදිරිපත් කරන්න.
+        - පිරිසිදු අක්ෂර වින්‍යාසය භාවිතා කරන්න.
         """
         
-        history = [{"role": "system", "content": sys_msg}] + st.session_state.messages
+        # Model selection based on slider
+        model_selection = "llama-3.1-70b-versatile" if model_power == "Ultra" else "llama-3.1-8b-instant"
+        
+        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
 
         try:
-            with st.status("විශ්ලේෂණය කරමින් පවතිනවා...", expanded=False):
-                completion = client.chat.completions.create(
+            with st.status("Analyzing logic...", expanded=False):
+                chat = client.chat.completions.create(
                     messages=history,
-                    model="llama-3.1-70b-versatile",
+                    model=model_selection,
                     temperature=0.3
                 )
-                response_text = completion.choices[0].message.content
+                response = chat.choices[0].message.content
             
-            st.markdown(response_text)
+            st.markdown(response)
             
             if voice_on:
-                play_voice(response_text)
+                play_voice(response)
                 
-            st.session_state.messages.append({"role": "assistant", "content": response_text})
+            st.session_state.messages.append({"role": "assistant", "content": response})
             
         except Exception:
-            # Fallback (බාධාවකදී ක්‍රියාත්මක වන පද්ධතිය)
+            # Multi-model Fallback System
             try:
-                fb = client.chat.completions.create(messages=history, model="llama-3.1-8b-instant")
+                fb = client.chat.completions.create(messages=history, model="mixtral-8x7b-32768")
                 st.markdown(fb.choices[0].message.content)
             except:
-                st.error("API සීමාව ඉක්මවා ඇත. කරුණාකර මොහොතකින් නැවත උත්සාහ කරන්න.")
+                st.error("පද්ධතියේ තාවකාලික බාධාවක්. කරුණාකර මොහොතකින් නැවත උත්සාහ කරන්න.")
