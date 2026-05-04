@@ -8,7 +8,7 @@ st.title("DiNuX AI 🤖")
 st.markdown("---")
 
 # API Key එක මෙතැනට දාන්න
-client = Groq(api_key="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")
+client = Groq(api_key="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")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
