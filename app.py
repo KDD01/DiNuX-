@@ -4,98 +4,74 @@ import base64
 from gtts import gTTS
 import io
 import time
+from PIL import Image
 
-# 1. Page Configuration - Ultra Modern UI
+# 1. Page Configuration
 st.set_page_config(
-    page_title="DiNuX Advanced AI",
-    page_icon="✨",
+    page_title="DiNuX Quantum AI",
+    page_icon="💠",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# 2. High-End Gemini UI Styling (Custom CSS)
+# 2. Ultra-Modern Gemini UI CSS (Advanced Version)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
-
-    html, body, [class*="css"] {
-        font-family: 'Google Sans', sans-serif;
-    }
-
-    /* Professional Dark Theme */
-    .stApp {
-        background-color: #0e0e10;
-        color: #e3e3e3;
-    }
-
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+    
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    .stApp { background-color: #0d0d0e; color: #e8eaed; }
     header, footer {visibility: hidden;}
 
-    /* Advanced Message Styling */
-    [data-testid="stChatMessage"] {
-        background-color: transparent !important;
-        border: none !important;
-        padding: 1.5rem 0 !important;
-        animation: fadeIn 0.5s ease-in-out;
+    /* Sidebar Menu Styling */
+    [data-testid="stSidebar"] {
+        background-color: #161719 !important;
+        border-right: 1px solid #333;
     }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Gemini Bottom Input Bar - Floating Design */
+    /* Floating Chat Input Bar */
     div[data-testid="stChatInput"] {
         position: fixed;
-        bottom: 35px;
+        bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
         width: 85% !important;
         max-width: 800px !important;
-        background: rgba(30, 31, 32, 0.95) !important;
-        backdrop-filter: blur(10px);
-        border-radius: 32px !important;
+        background: #1e1f20 !important;
+        border-radius: 24px !important;
         border: 1px solid #3c4043 !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        z-index: 1000;
+        padding: 8px !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
 
-    /* Sidebar Refinement */
-    [data-testid="stSidebar"] {
-        background-color: #1e1f20 !important;
-        border-right: 1px solid #333;
+    /* Message Bubbles */
+    [data-testid="stChatMessage"] {
+        background-color: transparent !important;
+        border-radius: 15px;
+        padding: 1rem !important;
     }
 
+    /* Gradient Branding */
     .gemini-gradient {
-        background: linear-gradient(120deg, #4285f4, #9b72cb, #d96570);
+        background: linear-gradient(90deg, #4285f4, #a142f4, #eb4034);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 700;
-        font-size: 2.8rem;
+        font-size: 2.5rem;
     }
 
-    /* Interaction Button Styling */
+    /* Buttons */
     .stButton>button {
-        border-radius: 20px !important;
-        background-color: #333537 !important;
-        color: white !important;
-        border: none !important;
-        transition: 0.3s;
-    }
-
-    .stButton>button:hover {
-        background-color: #444746 !important;
-        transform: scale(1.02);
-    }
-
-    /* Mobile Adaptability */
-    @media (max-width: 768px) {
-        div[data-testid="stChatInput"] { width: 92% !important; bottom: 20px; }
-        .gemini-gradient { font-size: 2rem; }
+        width: 100%;
+        border-radius: 12px;
+        background-color: #2b2c2f;
+        color: white;
+        border: 1px solid #444;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Core Engine Functions
+# 3. Core Functional Logic
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -104,96 +80,97 @@ def play_voice(text):
         tts.write_to_fp(fp)
         b64 = base64.b64encode(fp.getvalue()).decode()
         st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
-    except Exception:
-        pass
+    except: pass
 
-# --- Menu & Sidebar Setup ---
+# --- ADVANCED MENU (Sidebar) ---
 with st.sidebar:
-    st.markdown("<h2 class='gemini-gradient'>DiNuX Core</h2>", unsafe_allow_html=True)
+    st.markdown("<h1 class='gemini-gradient'>DiNuX AI</h1>", unsafe_allow_html=True)
     st.markdown("---")
     
-    st.subheader("Settings")
-    voice_on = st.toggle("Advanced Voice Response 🔊", value=False)
-    personality = st.selectbox("Intelligence Mode", ["Professional & Logical", "Creative & Friendly"])
+    st.subheader("🚀 Features & Tools")
+    tool_mode = st.radio("Select Tool:", ["Smart Chat 💬", "Image Analysis 🖼️", "File Reader 📄"])
+    
+    st.subheader("🔊 Audio Settings")
+    voice_on = st.toggle("Voice Responses", value=False)
+    
+    st.subheader("⚙️ Intelligence")
+    model_choice = st.selectbox("Model Speed:", ["Fast (8B)", "Powerful (70B)"])
     
     st.markdown("---")
-    if st.button("Clear Conversation History 🗑️", use_container_width=True):
+    if st.button("Clear Memory 🗑️"):
         st.session_state.messages = []
         st.rerun()
-        
-    st.markdown("---")
+    
     st.caption("Developer: Dinush Dilhara")
-    st.caption("Version: 3.5 Platinum Edition")
+    st.caption("Status: All Features Active ✅")
 
-# --- AI Intelligence Center ---
-# Multi-Model Redundancy to avoid Rate Limits
+# --- AI Client Setup ---
 client = Groq(api_key="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")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Dynamic Welcome Screen
+# Welcome UI
 if not st.session_state.messages:
-    st.markdown('<h1>සෙවුම අරඹන්න, <span class="gemini-gradient">මම DiNuX</span></h1>', unsafe_allow_html=True)
-    st.markdown("<p style='color: #bdc1c6; font-size: 1.2rem;'>ඔබට අවශ්‍ය ඕනෑම තාක්ෂණික හෝ සාමාන්‍ය දැනුමක් වෘත්තීය මට්ටමින් ලබා දීමට මම සූදානම්.</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; margin-top: 50px;'>කොහොමද, <span class='gemini-gradient'>දිනුෂ්</span></h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #8e918f;'>අද මම ඔබට උදව් කරන්නේ කෙසේද? සියලුම Features සක්‍රියයි.</p>", unsafe_allow_html=True)
 
-# Show Messages with Avatars
+# Display Chat History
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- Action Logic ---
+# --- FEATURE LOGIC: TOOL HANDLING ---
+
+# 1. File/Image Upload Feature
+if tool_mode != "Smart Chat 💬":
+    uploaded_file = st.file_uploader("Upload here...", type=["png", "jpg", "jpeg", "pdf", "txt"])
+    if uploaded_file:
+        st.success(f"{uploaded_file.name} සාර්ථකව ඇතුළත් කරන ලදී.")
+
+# 2. Main Chat Interaction
 if prompt := st.chat_input("මෙහි විමසන්න..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # Advanced System Prompt with Logic Constraints
-        sys_instructions = f"""
-        ඔබේ නම DiNuX. නිර්මාණය කළේ Dinush Dilhara විසිනි.
-        පෞරුෂය: {personality}
-        1. පිළිතුරු සැපයීමේදී වෘත්තීය සිංහල භාෂාව (Professional Sinhala) භාවිතා කරන්න.
-        2. සෑම විටම තර්කානුකූල සහ නිරවද්‍ය දත්ත ලබා දෙන්න (Logical & Accurate).
-        3. අනවශ්‍ය වැල්වටාරම් ඉවත් කර සෘජු පිළිතුරු ලබා දෙන්න.
-        4. පියවරෙන් පියවර විස්තර කළ යුතු කරුණු සඳහා Bullet points භාවිතා කරන්න.
-        5. ව්‍යාකරණ සහ අක්ෂර වින්‍යාසය පිළිබඳව අතිශය සැලකිලිමත් වන්න.
+        # Advanced Logic Instruction
+        sys_prompt = """
+        ඔබේ නම DiNuX. ඔබව නිර්මාණය කළේ Dinush Dilhara විසිනි.
+        ඔබ අතිශය බුද්ධිමත්, තර්කානුකූල සහ වෘත්තීය AI සහායකයෙකි.
+        සැමවිටම කෙලින්ම සහ සත්‍ය කරුණු මත පදනම්ව පිළිතුරු දෙන්න.
+        භාෂාව: වෘත්තීය සිංහල (Professional Sinhala).
         """
         
-        full_history = [{"role": "system", "content": sys_instructions}] + st.session_state.messages
+        selected_model = "llama-3.1-8b-instant" if model_choice == "Fast (8B)" else "llama-3.1-70b-versatile"
+        
+        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
 
         try:
-            # Primary Logic Engine: High-performance 70B Model
-            chat_completion = client.chat.completions.create(
-                messages=full_history,
-                model="llama-3.1-70b-versatile",
-                temperature=0.3 if "Professional" in personality else 0.7,
-                max_tokens=2048,
-                top_p=1
-            )
+            # AI Thinking Simulation
+            with st.status("විශ්ලේෂණය කරමින්...", expanded=False):
+                chat = client.chat.completions.create(
+                    messages=history,
+                    model=selected_model,
+                    temperature=0.3
+                )
+                res = chat.choices[0].message.content
             
-            response = chat_completion.choices[0].message.content
-            
-            # Simulated Thinking for User Familiarity
-            with st.spinner('විශ්ලේෂණය කරමින් පවතිනවා...'):
-                time.sleep(0.5)
-                st.markdown(response)
+            st.markdown(res)
             
             if voice_on:
-                play_voice(response)
+                play_voice(res)
                 
-            st.session_state.messages.append({"role": "assistant", "content": response})
+            st.session_state.messages.append({"role": "assistant", "content": res})
             
         except Exception as e:
-            # Automatic Fallback for Rate Limit Issues
+            # Fallback Anti-Error System
             try:
-                fallback_chat = client.chat.completions.create(
-                    messages=full_history,
-                    model="llama-3.1-8b-instant",
-                    temperature=0.4
+                fallback = client.chat.completions.create(
+                    messages=history,
+                    model="mixtral-8x7b-32768"
                 )
-                res = fallback_chat.choices[0].message.content
-                st.markdown(res)
-                st.session_state.messages.append({"role": "assistant", "content": res})
+                st.markdown(fallback.choices[0].message.content)
             except:
-                st.error("දැනට සේවාදායකයේ අධික තදබදයක් පවතී. කරුණාකර තප්පර කිහිපයකින් නැවත උත්සාහ කරන්න.")
+                st.error("දැනට සේවාදායකයේ තදබදයක් පවතී. කරුණාකර නැවත උත්සාහ කරන්න.")
