@@ -1,8 +1,10 @@
 import streamlit as st
 from groq import Groq
+from duckduckgo_search import DDGS
 import base64
 from gtts import gTTS
 import io
+import time
 
 # 1. Page Configuration
 st.set_page_config(
@@ -12,71 +14,37 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Modern Glassmorphism UI
+# 2. UI Styling
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #0e0e11;
-        background-image: radial-gradient(circle at 50% 20%, #1c1c3d 0%, #0e0e11 100%);
-        color: #e3e3e3;
-    }
+    .stApp { background-color: #0e0e11; color: #e3e3e3; }
     header, footer {visibility: hidden;}
-    
-    .block-container {
-        max-width: 850px;
-        padding-top: 2rem;
-        padding-bottom: 10rem;
-    }
-
+    .block-container { max-width: 850px; padding-bottom: 10rem; }
     .dinux-logo {
-        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800;
-        font-size: 2.2rem;
-        text-align: center;
+        background: linear-gradient(90deg, #4facfe, #00f2fe);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        font-weight: 800; font-size: 2.2rem; text-align: center;
     }
-
-    /* Floating Chat Input like Gemini */
     div[data-testid="stChatInput"] {
-        position: fixed;
-        bottom: 30px;
-        left: 50% !important;
-        transform: translateX(-50%);
-        width: 65% !important;
+        position: fixed; bottom: 30px; left: 50% !important;
+        transform: translateX(-50%); width: 65% !important;
         z-index: 1000;
-        background: transparent !important;
     }
-    
     div[data-testid="stChatInput"] > div {
-        background: #1e1e24 !important;
-        border: 1px solid #3c4043 !important;
+        background: #1e1e24 !important; border: 1px solid #3c4043 !important;
         border-radius: 28px !important;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-
-    .welcome-box { text-align: center; margin-top: 15vh; }
-    .welcome-title {
-        font-size: 4.5rem;
-        font-weight: 800;
-        background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    .welcome-sub { font-size: 2.5rem; color: #757575; font-weight: 500; }
-    
-    /* Smooth transition for messages */
-    .stChatMessage {
-        animation: fadeIn 0.5s ease-in;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Voice System
+# 3. Core Functions
+def search_web(query):
+    try:
+        with DDGS() as ddgs:
+            results = [r['body'] for r in ddgs.text(query, max_results=3)]
+            return "\n".join(results)
+    except: return ""
+
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -87,18 +55,9 @@ def play_voice(text):
         st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
     except: pass
 
-# --- SIDEBAR ---
-with st.sidebar:
-    st.markdown("<h1 class='dinux-logo'>DiNuX AI</h1>", unsafe_allow_html=True)
-    st.markdown("---")
-    st.subheader("Console")
-    is_voice = st.toggle("Audio Response 🔊", value=True)
-    if st.button("Refresh Chat", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
-
-# --- INITIALIZE API ---
-API_KEY = "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"
+# --- ENGINE SETUP ---
+# මෙතනට ඔබේ අලුත්ම API Key එක දාන්න
+API_KEY = "ඔබේ_අලුත්_GROQ_API_KEY_එක_මෙතනට_දමන්න" 
 client = Groq(api_key=API_KEY)
 
 if "messages" not in st.session_state:
@@ -106,19 +65,14 @@ if "messages" not in st.session_state:
 
 # Welcome Screen
 if not st.session_state.messages:
-    st.markdown("""
-        <div class="welcome-box">
-            <h1 class="welcome-title">Hello, DiNuX</h1>
-            <h2 class="welcome-sub">How can I help you today?</h2>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; margin-top:20vh;'><h1 style='font-size:4rem; color:white;'>Hello, <span style='color:#4facfe;'>DiNuX</span></h1><h2 style='color:#757575;'>How can I help you today?</h2></div>", unsafe_allow_html=True)
 
-# Display Chat History
+# Display Messages
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Chat Logic
+# Input Handling
 if prompt := st.chat_input("Ask DiNuX..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -128,41 +82,53 @@ if prompt := st.chat_input("Ask DiNuX..."):
         placeholder = st.empty()
         full_response = ""
         
-        # ADVANCED SYSTEM PROMPT TO STOP LOOPING
-        sys_prompt = """
+        # 1. Background Search
+        search_context = search_web(prompt)
+        
+        # 2. Advanced System Prompt
+        sys_prompt = f"""
         ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara.
-        වැදගත් උපදෙස්:
-        1. ලැබෙන සෑම ප්‍රශ්නයක්ම ස්වාධීනව විශ්ලේෂණය කර තාර්කිකව (Logically) සිතා පිළිතුරු දෙන්න.
-        2. එකම දේ නැවත නැවත පැවසීමෙන් (Looping) වළකින්න. පිළිතුර කෙටි හා පැහැදිලිව අවසන් කරන්න.
-        3. සිංහල භාෂාව භාවිතා කිරීමේදී ඉතා ස්වාභාවික වචන භාවිතා කරන්න.
-        4. ප්‍රශ්නයට අදාළ නැති දේවල් පවසා කාලය නාස්ති නොකරන්න.
+        සත්‍ය තොරතුරු පමණක් ලබා දෙන්න. සෙවුම් ප්‍රතිඵල: {search_context}
+        තාර්කිකව සිතා පිළිතුරු දෙන්න. Looping වීම වළක්වන්න.
         """
         
-        # Keeping history context but preventing it from confusing the model
-        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages[-10:] # Only last 10 messages for focus
+        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages[-6:]
 
+        # 3. Smart Request with Error Handling
         try:
+            # උත්සාහය 1: ප්‍රධාන මාදිලිය (Llama 3.3)
             completion = client.chat.completions.create(
                 messages=history,
                 model="llama-3.3-70b-versatile",
-                temperature=0.4, # Balanced for logic and creativity
-                max_tokens=2048,
-                top_p=0.9,
+                temperature=0.3,
                 stream=True
             )
             
             for chunk in completion:
                 if chunk.choices[0].delta.content:
-                    text_chunk = chunk.choices[0].delta.content
-                    full_response += text_chunk
+                    full_response += chunk.choices[0].delta.content
                     placeholder.markdown(full_response + "▌")
             
             placeholder.markdown(full_response)
-            
-            if is_voice:
-                play_voice(full_response)
-            
+            play_voice(full_response)
             st.session_state.messages.append({"role": "assistant", "content": full_response})
-            
+
         except Exception as e:
-            st.error("System connection busy. Please try again.")
+            # දෝෂයක් ආවොත් වෙනත් Model එකකින් උත්සාහ කිරීම (Fallback)
+            if "rate_limit" in str(e).lower():
+                st.warning("පද්ධතිය කාර්යබහුලයි. විකල්ප මාදිලියකින් පිළිතුරු සොයමින්...")
+                time.sleep(2) # තත්පර 2ක් රැඳී සිටීම
+                try:
+                    completion = client.chat.completions.create(
+                        messages=history,
+                        model="mixtral-8x7b-32768", # සීමාව අඩු මාදිලියක්
+                        temperature=0.5
+                    )
+                    full_response = completion.choices[0].message.content
+                    placeholder.markdown(full_response)
+                    play_voice(full_response)
+                    st.session_state.messages.append({"role": "assistant", "content": full_response})
+                except:
+                    st.error("දැනට පද්ධතියේ උපරිම සීමාව ඉක්මවා ඇත. කරුණාකර විනාඩියකින් නැවත උත්සාහ කරන්න.")
+            else:
+                st.error(f"සම්බන්ධතාවයේ දෝෂයක්: {e}")
