@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. UI Styling (Gemini Dark Vibe)
+# 2. UI Styling (Branding and Design)
 st.markdown("""
     <style>
     .stApp {
@@ -45,20 +45,36 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- API CORE SETUP (CRITICAL FIX) ---
+# --- API CORE SETUP (AUTO-DETECTION LOGIC) ---
 GEMINI_API_KEY = "AIzaSyB-3mqtHBYgaEqTSi1aACF76VH745vvejs"
 
-try:
-    # API එක Configure කිරීමේදී වඩාත් ස්ථාවර ක්‍රමය භාවිතා කිරීම
-    genai.configure(api_key=GEMINI_API_KEY)
-    
-    # 404 Error එක මගහැරීමට වඩාත් ගැලපෙන model නම භාවිතා කිරීම
-    # මෙහිදී 'gemini-1.5-flash' යනු වඩාත් ස්ථාවර අනුවාදයයි
-    model = genai.GenerativeModel('gemini-1.5-flash')
-except Exception as e:
-    st.error(f"Configuration Issue: {e}")
+def initialize_model():
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        
+        # දැනට පවතින Models ලැයිස්තුව පරීක්ෂා කර වැඩ කරන එකක් තෝරා ගැනීම
+        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        
+        # වඩාත්ම ගැලපෙන Model එකක් තෝරා ගැනීම (Priority List)
+        priority_models = ['models/gemini-1.5-flash', 'models/gemini-pro', 'models/gemini-1.5-pro']
+        
+        selected_model = None
+        for pm in priority_models:
+            if pm in available_models:
+                selected_model = pm
+                break
+        
+        if not selected_model:
+            selected_model = available_models[0] # කිසිවක් නැතිනම් ලැයිස්තුවේ පළමුවැන්න
+            
+        return genai.GenerativeModel(selected_model)
+    except Exception as e:
+        st.error(f"Initialization Failed: {e}")
+        return None
 
-# Web Search
+model = initialize_model()
+
+# Helper Functions
 def search_web(query):
     try:
         with DDGS() as ddgs:
@@ -66,7 +82,6 @@ def search_web(query):
             return "\n\n".join(results)
     except: return ""
 
-# Voice Output
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -81,7 +96,6 @@ def play_voice(text):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Welcome Screen
 if not st.session_state.messages:
     st.markdown(f"""
         <div style="text-align:center; margin-top:20vh;">
@@ -91,12 +105,11 @@ if not st.session_state.messages:
         </div>
     """, unsafe_allow_html=True)
 
-# Display Messages
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Chat Processing
+# --- PROCESSING ---
 if prompt := st.chat_input("Ask DiNuX..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -106,31 +119,28 @@ if prompt := st.chat_input("Ask DiNuX..."):
         placeholder = st.empty()
         full_response = ""
         
-        # Search live data
         search_results = search_web(prompt)
         
-        # Instructions
         sys_instructions = f"""
         ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara.
-        සත්‍ය තොරතුරු පමණක් ලබා දෙන්න. පිරිසිදු සිංහල හා ඉංග්‍රීසි භාවිතා කරන්න.
-        Live Search Context: {search_results}
+        Context: {search_results}
+        100% සත්‍ය තොරතුරු සිංහලෙන් හෝ ඉංග්‍රීසියෙන් ලබා දෙන්න.
         """
         
         try:
-            # Response Generation
-            response = model.generate_content([sys_instructions, prompt], stream=True)
-            
-            for chunk in response:
-                if chunk.text:
-                    full_response += chunk.text
-                    placeholder.markdown(full_response + "▌")
-            
-            placeholder.markdown(full_response)
-            play_voice(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
-            
+            if model:
+                response = model.generate_content([sys_instructions, prompt], stream=True)
+                for chunk in response:
+                    if chunk.text:
+                        full_response += chunk.text
+                        placeholder.markdown(full_response + "▌")
+                
+                placeholder.markdown(full_response)
+                play_voice(full_response)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+            else:
+                st.error("AI Model එක ක්‍රියාත්මක කළ නොහැක. කරුණාකර API Key එක පරීක්ෂා කරන්න.")
         except Exception as e:
-            # මෙහිදී Error එකක් ආවොත් එය පැහැදිලිව පෙන්වයි
             st.error(f"බාධාවක් ඇති විය: {str(e)}")
 
 # Sidebar
