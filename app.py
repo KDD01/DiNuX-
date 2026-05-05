@@ -6,7 +6,7 @@ from gtts import gTTS
 import io
 import time
 
-# 1. Page Configuration
+# 1. Page Configuration (Keeping your standard layout)
 st.set_page_config(
     page_title="DiNuX Advanced AI",
     page_icon="🌌",
@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. UI Styling (Keeping your favorite UI)
+# 2. UI Styling (Your Favorite Gemini-Style UI - No Changes)
 st.markdown("""
     <style>
     .stApp {
@@ -57,14 +57,17 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Core Engine Functions
+# 3. Enhanced Web Search (Deep Crawl Logic)
 def search_web(query):
     try:
         with DDGS() as ddgs:
-            results = [r['body'] for r in ddgs.text(query, max_results=3)]
-            return "\n".join(results)
-    except: return ""
+            # සෙවුම් ප්‍රතිඵල 5ක් දක්වා වැඩි කර ඇත (වැඩි නිවැරදිභාවයක් සඳහා)
+            results = [r['body'] for r in ddgs.text(query, max_results=5)]
+            return "\n\n".join(results)
+    except:
+        return "Search error. Please verify facts manually."
 
+# 4. Professional Voice Response
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -73,16 +76,17 @@ def play_voice(text):
         tts.write_to_fp(fp)
         b64 = base64.b64encode(fp.getvalue()).decode()
         st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
-    except: pass
+    except:
+        pass
 
-# --- API INITIALIZATION ---
+# --- API CORE ---
 API_KEY = "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"
 client = Groq(api_key=API_KEY)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Welcome Screen
+# Welcome Screen (Preserved)
 if not st.session_state.messages:
     st.markdown(f"""
         <div class="welcome-section">
@@ -96,8 +100,8 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- CHAT LOGIC WITH ERROR RECOVERY ---
-if prompt := st.chat_input("Ask DiNuX..."):
+# --- ADVANCED LOGIC PROCESSING ---
+if prompt := st.chat_input("Ask DiNuX anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -106,19 +110,27 @@ if prompt := st.chat_input("Ask DiNuX..."):
         placeholder = st.empty()
         full_response = ""
         
-        # 1. Background Search (Live Data)
-        search_context = search_web(prompt)
+        # Live Fact-Checking
+        with st.spinner("සත්‍ය තොරතුරු සොයමින්..."):
+            search_context = search_web(prompt)
         
+        # High-End System Instruction
         sys_prompt = f"""
-        ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara.
-        වැදගත්: පරිශීලකයාට 100% නිවැරදි තොරතුරු ලබා දෙන්න. 
-        සෙවුම් ප්‍රතිඵල: {search_context}
-        තාර්කිකව සිතා පිළිතුරු දෙන්න. Looping වීම වළක්වන්න. පිරිසිදු සිංහල භාවිතා කරන්න.
+        ඔබේ නම DiNuX AI. ඔබ Dinush Dilhara (KDD Studio) විසින් නිපදවන ලද සත්‍යවාදී සහ දියුණුම AI සහායකයායි.
+        
+        පිළිතුරු සැපයීමේ නීති:
+        1. Accuracy First: පහත ලබා දී ඇති සජීවී සෙවුම් ප්‍රතිඵල පමණක් පදනම් කරගෙන පිළිතුර ගොඩනගන්න. හිතලු තොරතුරු සම්පූර්ණයෙන්ම තහනම්.
+           සෙවුම් තොරතුරු: {search_context}
+        2. Language Proficiency: 
+           - සිංහල: ඉතාමත් පිරිසිදු, ගෞරවනීය සහ ස්වාභාවික (Human-like) සිංහල භාවිතා කරන්න.
+           - English: Use professional, grammatically perfect, and clear English.
+        3. Logic: ප්‍රශ්නය තාර්කිකව විශ්ලේෂණය කරන්න. පිළිතුරේ ගුණාත්මකභාවය 100% ක් විය යුතුය.
+        4. No Looping: එකම වාක්‍යය නැවත නැවත නොකියන්න.
         """
         
-        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages[-8:]
+        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages[-10:]
 
-        # 2. Advanced Multi-Model Request
+        # Multi-Model Stability (Error Recovery)
         models_to_try = ["llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "mixtral-8x7b-32768"]
         success = False
 
@@ -128,7 +140,7 @@ if prompt := st.chat_input("Ask DiNuX..."):
                 completion = client.chat.completions.create(
                     messages=history,
                     model=model_name,
-                    temperature=0.3,
+                    temperature=0.2, # Accuracy එක උපරිම කිරීමට අඩු කර ඇත
                     stream=True
                 )
                 
@@ -140,22 +152,22 @@ if prompt := st.chat_input("Ask DiNuX..."):
                 placeholder.markdown(full_response)
                 success = True
                 
-            except Exception as e:
-                # If rate limited, wait a second and try the next model
+            except Exception:
                 if model_name != models_to_try[-1]:
                     time.sleep(1)
                     continue
                 else:
-                    st.error("පද්ධතියේ අධික කාර්යබහුල බවක් පවතී. කරුණාකර විනාඩියකින් නැවත උත්සාහ කරන්න.")
+                    st.error("System connection busy. Please wait a moment.")
 
         if success:
             play_voice(full_response)
             st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-# Sidebar Settings
+# Sidebar
 with st.sidebar:
     st.markdown("<h1 class='dinux-logo'>DiNuX AI</h1>", unsafe_allow_html=True)
     st.markdown("---")
+    st.info("Created by Dinush Dilhara")
     if st.button("New Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
