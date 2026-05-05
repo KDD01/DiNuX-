@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Modern UI Styling
+# 2. Modern Glassmorphism UI
 st.markdown("""
     <style>
     .stApp {
@@ -23,7 +23,7 @@ st.markdown("""
     header, footer {visibility: hidden;}
     
     .block-container {
-        max-width: 900px;
+        max-width: 850px;
         padding-top: 2rem;
         padding-bottom: 10rem;
     }
@@ -37,6 +37,7 @@ st.markdown("""
         text-align: center;
     }
 
+    /* Floating Chat Input like Gemini */
     div[data-testid="stChatInput"] {
         position: fixed;
         bottom: 30px;
@@ -44,12 +45,14 @@ st.markdown("""
         transform: translateX(-50%);
         width: 65% !important;
         z-index: 1000;
+        background: transparent !important;
     }
     
     div[data-testid="stChatInput"] > div {
         background: #1e1e24 !important;
         border: 1px solid #3c4043 !important;
         border-radius: 28px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
     .welcome-box { text-align: center; margin-top: 15vh; }
@@ -61,10 +64,19 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
     }
     .welcome-sub { font-size: 2.5rem; color: #757575; font-weight: 500; }
+    
+    /* Smooth transition for messages */
+    .stChatMessage {
+        animation: fadeIn 0.5s ease-in;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Voice Logic
+# 3. Voice System
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -79,13 +91,13 @@ def play_voice(text):
 with st.sidebar:
     st.markdown("<h1 class='dinux-logo'>DiNuX AI</h1>", unsafe_allow_html=True)
     st.markdown("---")
-    is_voice = st.toggle("Voice Mode 🔊", value=True)
-    if st.button("Clear Memory"):
+    st.subheader("Console")
+    is_voice = st.toggle("Audio Response 🔊", value=True)
+    if st.button("Refresh Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# --- ENGINE ---
-# කරුණාකර ඔබගේ Groq API Key එක මෙහි භාවිතා කරන්න.
+# --- INITIALIZE API ---
 API_KEY = "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"
 client = Groq(api_key=API_KEY)
 
@@ -101,13 +113,13 @@ if not st.session_state.messages:
         </div>
     """, unsafe_allow_html=True)
 
-# History
+# Display Chat History
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Input
-if prompt := st.chat_input("Message DiNuX..."):
+# Chat Logic
+if prompt := st.chat_input("Ask DiNuX..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -116,33 +128,33 @@ if prompt := st.chat_input("Message DiNuX..."):
         placeholder = st.empty()
         full_response = ""
         
-        # FACTUAL & LOGICAL SYSTEM PROMPT
+        # ADVANCED SYSTEM PROMPT TO STOP LOOPING
         sys_prompt = """
-        ඔබේ නම DiNuX AI. ඔබ නිර්මාණය කළේ Dinush Dilhara.
-        ඔබේ ප්‍රධාන වගකීම වන්නේ පරිශීලකයා අසන ප්‍රශ්න වලට 100% ක් නිවැරදි, සත්‍ය සහ තාර්කික තොරතුරු ලබා දීමයි.
-        නීති:
-        1. හිතලු හෝ අසත්‍ය තොරතුරු (Hallucinations) ලබා නොදෙන්න.
-        2. ඔබ යම් දෙයක් ගැන නොදන්නේ නම්, එය නොදන්නා බව අවංකව පවසන්න.
-        3. පිළිතුරු දීමට පෙර කරුණු කිහිපවරක් තර්කානුකූලව විශ්ලේෂණය කරන්න.
-        4. පිරිසිදු සිංහල භාෂාව සහ ගෞරවනීය ස්වරූපය භාවිතා කරන්න.
-        5. තොරතුරු සැපයීමේදී අදාළ විෂය ක්ෂේත්‍රයේ නිවැරදිම දත්ත භාවිතා කරන්න.
+        ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara.
+        වැදගත් උපදෙස්:
+        1. ලැබෙන සෑම ප්‍රශ්නයක්ම ස්වාධීනව විශ්ලේෂණය කර තාර්කිකව (Logically) සිතා පිළිතුරු දෙන්න.
+        2. එකම දේ නැවත නැවත පැවසීමෙන් (Looping) වළකින්න. පිළිතුර කෙටි හා පැහැදිලිව අවසන් කරන්න.
+        3. සිංහල භාෂාව භාවිතා කිරීමේදී ඉතා ස්වාභාවික වචන භාවිතා කරන්න.
+        4. ප්‍රශ්නයට අදාළ නැති දේවල් පවසා කාලය නාස්ති නොකරන්න.
         """
         
-        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
+        # Keeping history context but preventing it from confusing the model
+        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages[-10:] # Only last 10 messages for focus
 
         try:
             completion = client.chat.completions.create(
                 messages=history,
                 model="llama-3.3-70b-versatile",
-                temperature=0.1,  # ඉතා අඩු අගයක් දමා ඇත (වැඩි නිවැරදිභාවයක් සඳහා)
-                max_tokens=4096,
-                top_p=1,
+                temperature=0.4, # Balanced for logic and creativity
+                max_tokens=2048,
+                top_p=0.9,
                 stream=True
             )
             
             for chunk in completion:
                 if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
+                    text_chunk = chunk.choices[0].delta.content
+                    full_response += text_chunk
                     placeholder.markdown(full_response + "▌")
             
             placeholder.markdown(full_response)
@@ -153,4 +165,4 @@ if prompt := st.chat_input("Message DiNuX..."):
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
         except Exception as e:
-            st.error(f"Error: API limit reached or Connection lost. ({e})")
+            st.error("System connection busy. Please try again.")
