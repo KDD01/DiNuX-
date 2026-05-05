@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. UI Styling (Gemini Dark Theme)
+# 2. Custom UI Styling (No changes to your favorite design)
 st.markdown("""
     <style>
     .stApp {
@@ -42,30 +42,20 @@ st.markdown("""
         border-radius: 28px !important;
         box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-
-    .welcome-section {
-        display: flex; flex-direction: column; align-items: center;
-        justify-content: center; height: 50vh; text-align: center;
-    }
-    .welcome-text {
-        font-size: 4rem; font-weight: 700;
-        background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .sub-welcome { font-size: 2.5rem; color: #5f6368; font-weight: 500; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- API SETUP ---
+# --- API CORE SETUP (FIXED MODEL) ---
 GEMINI_API_KEY = "AIzaSyB-3mqtHBYgaEqTSi1aACF76VH745vvejs"
 
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # මෙතැනදී gemini-1.5-flash-latest ලෙස භාවිතා කිරීමෙන් 404 Error එක මගහැරේ
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
 except Exception as e:
-    st.error(f"API Configuration Error: {e}")
+    st.error(f"Configuration Issue: {e}")
 
-# Web Search
+# Helper: Search Web
 def search_web(query):
     try:
         with DDGS() as ddgs:
@@ -73,7 +63,7 @@ def search_web(query):
             return "\n\n".join(results)
     except: return ""
 
-# Voice
+# Helper: Voice Output
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -84,17 +74,17 @@ def play_voice(text):
         st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
     except: pass
 
-# --- SESSION ---
+# --- SESSION HANDLING ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Welcome UI
+# Welcome Screen
 if not st.session_state.messages:
     st.markdown(f"""
-        <div class="welcome-section">
-            <p style="color:#4facfe; font-weight:bold; letter-spacing:2px;">DS MEDIA HUB</p>
-            <h1 class="welcome-text">Hello, DiNuX</h1>
-            <h2 class="sub-welcome">How can I help you today?</h2>
+        <div style="text-align:center; margin-top:20vh;">
+            <p style="color:#4facfe; font-weight:bold; letter-spacing:2px; margin-bottom:0;">DS MEDIA HUB</p>
+            <h1 style="font-size:4rem; font-weight:700; background:linear-gradient(90deg, #4285f4, #9b72cb, #d96570); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Hello, DiNuX</h1>
+            <h2 style="font-size:2rem; color:#5f6368; font-weight:500;">How can I help you today?</h2>
         </div>
     """, unsafe_allow_html=True)
 
@@ -103,7 +93,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Chat Input
+# Chat Processing
 if prompt := st.chat_input("Ask DiNuX..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -113,16 +103,18 @@ if prompt := st.chat_input("Ask DiNuX..."):
         placeholder = st.empty()
         full_response = ""
         
-        search_data = search_web(prompt)
+        # Search live data
+        search_results = search_web(prompt)
         
+        # Expert Instructions
         sys_instructions = f"""
-        ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara (DS Media Hub).
-        සජීවී දත්ත: {search_data}
-        ලබා දී ඇති දත්ත ඇසුරින් 100% නිවැරදිව සිංහලෙන් හෝ ඉංග්‍රීසියෙන් පිළිතුරු දෙන්න.
+        ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara.
+        සත්‍ය තොරතුරු පමණක් ලබා දෙන්න. පිරිසිදු සිංහල හා ඉංග්‍රීසි භාවිතා කරන්න.
+        Context: {search_results}
         """
         
         try:
-            # ඉල්ලීම යැවීම
+            # Generating Content (Flash Latest)
             response = model.generate_content([sys_instructions, prompt], stream=True)
             
             for chunk in response:
@@ -135,5 +127,13 @@ if prompt := st.chat_input("Ask DiNuX..."):
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
         except Exception as e:
-            # වැරැද්ද මොකක්ද කියලා මෙතනින් බලාගන්න පුළුවන්
-            st.error(f"Error: {str(e)}")
+            st.error(f"සම්බන්ධතාවයේ බාධාවක්: {str(e)}")
+
+# Sidebar Settings
+with st.sidebar:
+    st.markdown("<h1 class='dinux-logo'>DiNuX AI</h1>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.info("KDD Studio Professional AI Engine")
+    if st.button("New Chat", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
