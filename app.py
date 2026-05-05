@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Custom UI Styling (No changes to your favorite design)
+# 2. UI Styling (Gemini Dark Vibe)
 st.markdown("""
     <style>
     .stApp {
@@ -45,17 +45,20 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- API CORE SETUP (FIXED MODEL) ---
+# --- API CORE SETUP (CRITICAL FIX) ---
 GEMINI_API_KEY = "AIzaSyB-3mqtHBYgaEqTSi1aACF76VH745vvejs"
 
 try:
+    # API එක Configure කිරීමේදී වඩාත් ස්ථාවර ක්‍රමය භාවිතා කිරීම
     genai.configure(api_key=GEMINI_API_KEY)
-    # මෙතැනදී gemini-1.5-flash-latest ලෙස භාවිතා කිරීමෙන් 404 Error එක මගහැරේ
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    
+    # 404 Error එක මගහැරීමට වඩාත් ගැලපෙන model නම භාවිතා කිරීම
+    # මෙහිදී 'gemini-1.5-flash' යනු වඩාත් ස්ථාවර අනුවාදයයි
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
     st.error(f"Configuration Issue: {e}")
 
-# Helper: Search Web
+# Web Search
 def search_web(query):
     try:
         with DDGS() as ddgs:
@@ -63,7 +66,7 @@ def search_web(query):
             return "\n\n".join(results)
     except: return ""
 
-# Helper: Voice Output
+# Voice Output
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -106,15 +109,15 @@ if prompt := st.chat_input("Ask DiNuX..."):
         # Search live data
         search_results = search_web(prompt)
         
-        # Expert Instructions
+        # Instructions
         sys_instructions = f"""
         ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara.
         සත්‍ය තොරතුරු පමණක් ලබා දෙන්න. පිරිසිදු සිංහල හා ඉංග්‍රීසි භාවිතා කරන්න.
-        Context: {search_results}
+        Live Search Context: {search_results}
         """
         
         try:
-            # Generating Content (Flash Latest)
+            # Response Generation
             response = model.generate_content([sys_instructions, prompt], stream=True)
             
             for chunk in response:
@@ -127,13 +130,13 @@ if prompt := st.chat_input("Ask DiNuX..."):
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
         except Exception as e:
-            st.error(f"සම්බන්ධතාවයේ බාධාවක්: {str(e)}")
+            # මෙහිදී Error එකක් ආවොත් එය පැහැදිලිව පෙන්වයි
+            st.error(f"බාධාවක් ඇති විය: {str(e)}")
 
-# Sidebar Settings
+# Sidebar
 with st.sidebar:
     st.markdown("<h1 class='dinux-logo'>DiNuX AI</h1>", unsafe_allow_html=True)
     st.markdown("---")
-    st.info("KDD Studio Professional AI Engine")
     if st.button("New Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
