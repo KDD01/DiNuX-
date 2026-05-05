@@ -12,10 +12,10 @@ st.set_page_config(
     page_title="DiNuX Advanced AI",
     page_icon="🌌",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# 2. Advanced UI Styling (Same UI, Higher Stability)
+# 2. UI Styling (Keeping your favorite layout)
 st.markdown("""
     <style>
     .stApp {
@@ -34,7 +34,7 @@ st.markdown("""
 
     div[data-testid="stChatInput"] {
         position: fixed; bottom: 40px; left: 50% !important;
-        transform: translateX(-50%); width: 80% !important;
+        transform: translateX(-50%); width: 75% !important;
         z-index: 1000;
     }
     
@@ -47,24 +47,22 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. API Key Rotation Logic (To prevent "Busy" Error)
-# ඔබට පුළුවන් නම් තව API Keys 2-3ක් හදලා මේ List එකට දාන්න. එවිට සීමාවන් වැටෙන්නේ නැත.
+# 3. Secure API Key Management
+# සීමාව ඉක්මවා යාම වැළැක්වීමට මෙතනට තව Keys 2ක් විතර දාන්න.
 API_KEYS = [
-    "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",
-    # "මෙතනට තව Key එකක් දාන්න",
-    # "මෙතනට තව Key එකක් දාන්න"
+    "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"
 ]
 
-def get_groq_client(user_key=None):
-    if user_key:
-        return Groq(api_key=user_key)
-    return Groq(api_key=random.choice(API_KEYS))
+def get_client():
+    # අහඹු ලෙස Key එකක් තෝරා ගැනීම මගින් සීමාවන් බෙදී යයි
+    selected_key = random.choice(API_KEYS)
+    return Groq(api_key=selected_key)
 
-# 4. Helper Functions
+# 4. Core Functions
 def search_web(query):
     try:
         with DDGS() as ddgs:
-            results = [r['body'] for r in ddgs.text(query, max_results=4)]
+            results = [r['body'] for r in ddgs.text(query, max_results=3)]
             return "\n\n".join(results)
     except: return ""
 
@@ -78,21 +76,11 @@ def play_voice(text):
         st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
     except: pass
 
-# --- SIDEBAR SETTINGS ---
-with st.sidebar:
-    st.markdown("<h1 class='dinux-logo'>DiNuX AI</h1>", unsafe_allow_html=True)
-    st.markdown("---")
-    user_api_key = st.text_input("Custom Groq API Key (Optional)", type="password", help="සීමාවන් ඉක්මවා ගියහොත් ඔබේම Key එකක් මෙතනට ලබා දිය හැක.")
-    st.info("Created by Dinush Dilhara for DS Media Hub.")
-    if st.button("Clear History"):
-        st.session_state.messages = []
-        st.rerun()
-
-# --- CHAT ENGINE ---
+# --- APP LOGIC ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Welcome Screen
+# Welcome UI
 if not st.session_state.messages:
     st.markdown("<div style='text-align:center; margin-top:20vh;'><h1 style='font-size:4rem; color:white;'>Hello, <span style='color:#4facfe;'>DiNuX</span></h1><h2 style='color:#757575;'>How can I help you today?</h2></div>", unsafe_allow_html=True)
 
@@ -109,28 +97,29 @@ if prompt := st.chat_input("Ask DiNuX..."):
         placeholder = st.empty()
         full_response = ""
         
-        search_context = search_web(prompt)
+        # 1. Search Live Context
+        search_data = search_web(prompt)
         
-        sys_prompt = f"""
-        නම: DiNuX AI. නිර්මාණය කළේ: Dinush Dilhara.
-        වැදගත්: සජීවී සෙවුම් ප්‍රතිඵල ඇසුරින් 100% නිවැරදි තොරතුරු දෙන්න.
-        භාෂාව: සිංහල සහ ඉංග්‍රීසි ඉතාමත් නිවැරදිව භාවිතා කරන්න.
-        Context: {search_context}
+        # 2. System Instructions
+        sys_instructions = f"""
+        ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara.
+        සත්‍ය තොරතුරු පමණක් ලබා දෙන්න. පිරිසිදු සිංහල හා ඉංග්‍රීසි භාවිතා කරන්න.
+        Search Context: {search_data}
         """
         
-        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages[-10:]
+        history = [{"role": "system", "content": sys_instructions}] + st.session_state.messages[-10:]
 
-        # Smart Retry Logic
-        models = ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "llama3-70b-8192"]
-        client = get_groq_client(user_api_key if user_api_key else None)
-        
+        # 3. High-Stability Request Logic (Models 3ක් හරහා උත්සාහ කිරීම)
+        available_models = ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "llama3-70b-8192"]
         success = False
-        for model_name in models:
+        
+        for model in available_models:
             if success: break
             try:
+                client = get_client()
                 completion = client.chat.completions.create(
                     messages=history,
-                    model=model_name,
+                    model=model,
                     temperature=0.3,
                     stream=True
                 )
@@ -141,12 +130,22 @@ if prompt := st.chat_input("Ask DiNuX..."):
                         placeholder.markdown(full_response + "▌")
                 
                 placeholder.markdown(full_response)
-                success = True
                 play_voice(full_response)
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
+                success = True
+                
             except Exception as e:
-                if "rate_limit" in str(e).lower():
-                    continue # Try next model
-                else:
-                    st.error("පද්ධතියේ දෝෂයකි. කරුණාකර මොහොතකින් උත්සාහ කරන්න.")
-                    break
+                # Rate limit දෝෂයක් නම් තත්පරයක් රැඳී සිට ඊළඟ Model එක බලන්න
+                time.sleep(1.5)
+                continue 
+
+        if not success:
+            st.error("සියලුම පද්ධති මේ මොහොතේ කාර්යබහුලයි. කරුණාකර තත්පර 30කින් නැවත උත්සාහ කරන්න.")
+
+# Sidebar
+with st.sidebar:
+    st.markdown("<h1 class='dinux-logo'>DiNuX AI</h1>", unsafe_allow_html=True)
+    st.markdown("---")
+    if st.button("New Chat", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
