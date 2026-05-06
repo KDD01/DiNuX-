@@ -1,92 +1,115 @@
 import streamlit as st
 import google.generativeai as genai
+import time
 
 # --- 1. CONFIGURATION ---
-# ඔයාගේ API Key එක මෙතනට දාන්න
+# ඔයාගේ Gemini API Key එක මෙතනට දාන්න
 API_KEY = "මෙතනට_ඔයාගේ_API_KEY_එක_Paste_කරන්න"
 
-# API එක නිවැරදිව Configure කිරීම
 try:
     genai.configure(api_key=API_KEY)
     
-    # පණිවිඩ වලට පිළිතුරු නොදී සිටීම වැළැක්වීමට Safety Settings සකස් කිරීම
+    # පණිවිඩ වලට පිළිතුරු දීමේ වේගය වැඩි කිරීමට සහ බග්ස් නැති කිරීමට Settings
     generation_config = {
-        "temperature": 0.7,
+        "temperature": 0.8,
         "top_p": 1,
         "top_k": 1,
         "max_output_tokens": 2048,
     }
     
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash", # වඩාත් වේගවත් මාදිලිය
+        model_name="gemini-1.5-flash", 
         generation_config=generation_config
     )
 except Exception as e:
     st.error(f"Configuration Error: {e}")
 
-# --- 2. UI SETTINGS ---
+# --- 2. UI SETTINGS & SHINING EFFECT ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
 
-# Custom CSS - KDD Studio Look & Feel
 st.markdown("""
     <style>
     .stApp {
         background-color: #030712;
         color: white;
     }
-    /* Chat bubbles styling */
+    
+    /* SHINING EFFECT FOR TITLE */
+    .shining-title {
+        color: #ffffff;
+        font-size: 40px;
+        font-weight: 800;
+        text-align: center;
+        background: linear-gradient(90deg, #333, #fff, #333);
+        background-repeat: no-repeat;
+        background-size: 80%;
+        animation: shine 3s linear infinite;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: rgba(255, 255, 255, 0.3);
+        margin-bottom: 0px;
+    }
+
+    @keyframes shine {
+        0% { background-position: -500%; }
+        100% { background-position: 500%; }
+    }
+
     .stChatMessage {
         border-radius: 15px;
-        margin-bottom: 10px;
     }
-    h1 {
-        background: linear-gradient(90deg, #00e5ff, #ff2fd0);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800;
+    
+    /* Powered by area */
+    .caption-text {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 14px;
+        margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🤖 DiNuX AI Assistant")
-# ඔයා ඉල්ලපු විදියට KDD Studio ලෙස වෙනස් කළා
-st.caption("Developed by Dinush Dilhara | Powered by KDD Studio")
+# Shining Title
+st.markdown('<h1 class="shining-title">🤖 DiNuX AI Assistant</h1>', unsafe_allow_html=True)
+st.markdown('<p class="caption-text">Developed by Dinush Dilhara | Powered by KDD Studio</p>', unsafe_allow_html=True)
 
-# Chat History එක Session State එකේ තබා ගැනීම
+# Chat History initialization
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# කලින් කළ කතාබස් (Chat History) පෙන්වීම
+# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 3. CHAT LOGIC ---
+# --- 3. CHAT LOGIC (FIXED FOR NO REPLY ISSUE) ---
 if prompt := st.chat_input("Ask DiNuX anything..."):
-    # User ගේ පණිවිඩය පෙන්වීම සහ Save කිරීම
+    # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # AI එකෙන් පිළිතුර ලබා ගැනීම
+    # Generate assistant response
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."): # පිළිතුර එනතුරු පෙන්වන animation එක
-            try:
-                # Chat එක ආරම්භ කර පිළිතුර ලබා ගැනීම
-                chat = model.start_chat(history=[])
-                response = chat.send_message(prompt, stream=False)
-                
-                if response and response.text:
-                    full_response = response.text
-                    st.markdown(full_response)
-                    # පිළිතුර History එකට එකතු කිරීම
-                    st.session_state.messages.append({"role": "assistant", "content": full_response})
-                else:
-                    st.error("කණගාටුයි, පිළිතුරක් සකස් කිරීමට නොහැකි වුණා. නැවත උත්සාහ කරන්න.")
-                    
-            except Exception as e:
-                # API Key වැරදි නම් හෝ වෙනත් තාක්ෂණික දෝෂයක් නම්
-                if "API_KEY_INVALID" in str(e):
-                    st.error("Error: ඔයාගේ API Key එක වැරදියි. කරුණාකර නිවැරදි Key එකක් ඇතුළත් කරන්න.")
-                else:
-                    st.error(f"දෝෂයක් ඇති වුණා: {e}")
+        message_placeholder = st.empty() # පිළිතුර පෙන්වීමට හිස් තැනක්
+        full_response = ""
+        
+        try:
+            # Stream=True පාවිච්චි කිරීමෙන් පිළිතුර එසැණින් ලබාගැනීම
+            response = model.generate_content(prompt, stream=True)
+            
+            for chunk in response:
+                if chunk.text:
+                    full_response += chunk.text
+                    time.sleep(0.01) # ටිකක් ස්වභාවිකව පෙන්වීමට
+                    # පිළිතුර ටික ටික පෙන්වීම
+                    message_placeholder.markdown(full_response + "▌")
+            
+            # සම්පූර්ණ පිළිතුර පෙන්වීම
+            message_placeholder.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+        except Exception as e:
+            if "API_KEY_INVALID" in str(e):
+                st.error("Error: ඔයාගේ API Key එක වැරදියි.")
+            else:
+                st.error(f"Error: {e}")
