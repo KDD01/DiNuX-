@@ -1,87 +1,82 @@
 import streamlit as st
-import google.generativeai as genai
-from duckduckgo_search import DDGS
+from groq import Groq
 import base64
 from gtts import gTTS
 import io
 
-# 1. Page Configuration
+# 1. Page Config (Full Dynamic Layout)
 st.set_page_config(
     page_title="DiNuX Advanced AI",
     page_icon="🌌",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# 2. UI Styling (Branding and Design)
+# 2. THE ADVANCED GEMINI-STYLE UI
 st.markdown("""
     <style>
+    /* Main Background with a subtle gradient */
     .stApp {
-        background-color: #0e0e11;
-        background-image: radial-gradient(circle at 50% 20%, #1c1c3d 0%, #0e0e11 100%);
+        background-color: #0b0b0b;
+        background-image: radial-gradient(circle at 50% -20%, #1a1a3a 0%, #0b0b0b 80%);
         color: #e3e3e3;
-    }
-    header, footer {visibility: hidden;}
-    .block-container { max-width: 850px; padding-bottom: 10rem; }
-    
-    .dinux-logo {
-        background: linear-gradient(90deg, #4facfe, #00f2fe);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        font-weight: 800; font-size: 2.2rem; text-align: center;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
+    header, footer {visibility: hidden;}
+
+    /* Sidebar - Deep Glass Effect */
+    [data-testid="stSidebar"] {
+        background-color: rgba(15, 15, 15, 0.95) !important;
+        border-right: 1px solid #2d2d2d;
+    }
+
+    /* Message Containers (Clean & Modern) */
+    .stChatMessage {
+        background-color: transparent !important;
+        border: none !important;
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 850px;
+        margin: auto;
+    }
+
+    /* Glowing Text & Icons */
+    .gemini-gradient {
+        background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+    }
+
+    /* Fixed Input Bar - Floating & Minimalist */
     div[data-testid="stChatInput"] {
-        position: fixed; bottom: 40px; left: 50% !important;
-        transform: translateX(-50%); width: 75% !important;
-        z-index: 1000;
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60% !important;
+        background: #1e1e1e !important;
+        border: 1px solid #3c4043 !important;
+        border-radius: 32px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    /* Hide User Icon Default Styling */
+    [data-testid="stChatMessageAvatarUser"] {
+        background-color: #4285f4 !important;
     }
     
-    div[data-testid="stChatInput"] > div {
-        background: #1e1e24 !important;
-        border: 1px solid #3c4043 !important;
-        border-radius: 28px !important;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    /* Code block styling */
+    code {
+        color: #ff79c6 !important;
+        background-color: #1e1e1e !important;
+        border-radius: 5px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- API CORE SETUP (AUTO-DETECTION LOGIC) ---
-GEMINI_API_KEY = "AIzaSyB-3mqtHBYgaEqTSi1aACF76VH745vvejs"
-
-def initialize_model():
-    try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        
-        # දැනට පවතින Models ලැයිස්තුව පරීක්ෂා කර වැඩ කරන එකක් තෝරා ගැනීම
-        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        
-        # වඩාත්ම ගැලපෙන Model එකක් තෝරා ගැනීම (Priority List)
-        priority_models = ['models/gemini-1.5-flash', 'models/gemini-pro', 'models/gemini-1.5-pro']
-        
-        selected_model = None
-        for pm in priority_models:
-            if pm in available_models:
-                selected_model = pm
-                break
-        
-        if not selected_model:
-            selected_model = available_models[0] # කිසිවක් නැතිනම් ලැයිස්තුවේ පළමුවැන්න
-            
-        return genai.GenerativeModel(selected_model)
-    except Exception as e:
-        st.error(f"Initialization Failed: {e}")
-        return None
-
-model = initialize_model()
-
-# Helper Functions
-def search_web(query):
-    try:
-        with DDGS() as ddgs:
-            results = [r['body'] for r in ddgs.text(query, max_results=3)]
-            return "\n\n".join(results)
-    except: return ""
-
+# 3. Core Engine Functions
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
@@ -92,61 +87,81 @@ def play_voice(text):
         st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
     except: pass
 
-# --- SESSION HANDLING ---
+# --- LEFT NAVIGATION (MINIMAL) ---
+with st.sidebar:
+    st.markdown("<br><h2 style='text-align:center;' class='gemini-gradient'>DiNuX AI</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#8e8e8e;'>v6.0 Official Build</p>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # Feature Toggles
+    with st.container():
+        st.markdown("#### System Configurations")
+        is_voice = st.toggle("Audio Feedback 🔊", value=True)
+        is_creative = st.toggle("Creative Mode ✨", value=False)
+        
+    st.markdown("<br>" * 10)
+    if st.button("New Chat +", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
+# --- MAIN INTERFACE ---
+client = Groq(api_key="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")
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Welcome Screen (Only shows at the start)
 if not st.session_state.messages:
-    st.markdown(f"""
-        <div style="text-align:center; margin-top:20vh;">
-            <p style="color:#4facfe; font-weight:bold; letter-spacing:2px; margin-bottom:0;">DS MEDIA HUB</p>
-            <h1 style="font-size:4rem; font-weight:700; background:linear-gradient(90deg, #4285f4, #9b72cb, #d96570); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Hello, DiNuX</h1>
-            <h2 style="font-size:2rem; color:#5f6368; font-weight:500;">How can I help you today?</h2>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    st.markdown("<h1 style='font-size: 3.5rem; margin-left: 10%;'>Hello, <span class='gemini-gradient'>Dinush</span></h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #444746; margin-left: 10%;'>How can I help you today?</h2>", unsafe_allow_html=True)
 
+# Display Messages
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- PROCESSING ---
+# Input Handling
 if prompt := st.chat_input("Ask DiNuX..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        placeholder = st.empty()
-        full_response = ""
+        # Advanced Logic Setting
+        temp = 0.7 if is_creative else 0.2
         
-        search_results = search_web(prompt)
-        
-        sys_instructions = f"""
-        ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara.
-        Context: {search_results}
-        100% සත්‍ය තොරතුරු සිංහලෙන් හෝ ඉංග්‍රීසියෙන් ලබා දෙන්න.
+        sys_prompt = f"""
+        ඔබේ නම DiNuX. නිර්මාණය කළේ Dinush Dilhara (KDD Studio).
+        ඔබ අතිශය බුද්ධිමත්, වෘත්තීය සහ මිත්‍රශීලී AI සහායකයෙකි.
+        භාෂාව: ගෞරවනීය සහ පිරිසිදු සිංහල.
         """
         
-        try:
-            if model:
-                response = model.generate_content([sys_instructions, prompt], stream=True)
-                for chunk in response:
-                    if chunk.text:
-                        full_response += chunk.text
-                        placeholder.markdown(full_response + "▌")
-                
-                placeholder.markdown(full_response)
-                play_voice(full_response)
-                st.session_state.messages.append({"role": "assistant", "content": full_response})
-            else:
-                st.error("AI Model එක ක්‍රියාත්මක කළ නොහැක. කරුණාකර API Key එක පරීක්ෂා කරන්න.")
-        except Exception as e:
-            st.error(f"බාධාවක් ඇති විය: {str(e)}")
+        history = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
 
-# Sidebar
-with st.sidebar:
-    st.markdown("<h1 class='dinux-logo'>DiNuX AI</h1>", unsafe_allow_html=True)
-    st.markdown("---")
-    if st.button("New Chat", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
+        try:
+            # Thinking animation style
+            placeholder = st.empty()
+            full_response = ""
+            
+            completion = client.chat.completions.create(
+                messages=history,
+                model="llama-3.1-70b-versatile",
+                temperature=temp,
+                stream=True
+            )
+            
+            for chunk in completion:
+                if chunk.choices[0].delta.content:
+                    full_response += chunk.choices[0].delta.content
+                    placeholder.markdown(full_response + "▌")
+            
+            placeholder.markdown(full_response)
+            
+            if is_voice:
+                play_voice(full_response)
+                
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+        except Exception as e:
+            st.error(f"System Error: {e}")
