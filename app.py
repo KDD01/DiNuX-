@@ -21,14 +21,7 @@ st.markdown("""
         color: #e3e3e3;
     }
     header, footer {visibility: hidden;}
-    .kdd-title {
-        font-size: 1.2rem;
-        color: #8e8e8e;
-        font-weight: 500;
-        letter-spacing: 3px;
-        margin-bottom: -10px;
-        animation: fadeIn 2s;
-    }
+    
     .brand-gradient {
         background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
         -webkit-background-clip: text;
@@ -36,9 +29,9 @@ st.markdown("""
         font-weight: 800;
         animation: slideUp 1.5s;
     }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
     /* Mobile Responsive Input Bar */
     @media (max-width: 768px) {
         div[data-testid="stChatInput"] { width: 92% !important; bottom: 15px !important; }
@@ -53,21 +46,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR Branding ---
-with st.sidebar:
-    st.markdown("<h2 class='brand-gradient'>KDD Studio</h2>", unsafe_allow_html=True)
-    st.caption("Quantum AI Interface v8.5")
-    st.markdown("---")
-    if st.button("Clear Chat History 🗑️", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
-
-# --- AI LOGIC WITH ADVANCED SINHALA PERSONA ---
+# --- AI LOGIC CORE ---
 API_KEY = "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"
 client = Groq(api_key=API_KEY)
 
-# අක්‍රිය නොවන බලවත්ම Models
-MODELS_POOL = ["llama-3.3-70b-versatile", "llama-3.1-70b-specdec", "mixtral-8x7b-32768"]
+# අනුපිළිවෙලින් උත්සාහ කරන Models ලැයිස්තුව
+MODELS_POOL = ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "llama-3.1-8b-instant"]
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -75,9 +59,9 @@ if "messages" not in st.session_state:
 # Welcome UI
 if not st.session_state.messages:
     st.markdown("<br><br><br><div style='text-align: center;'>", unsafe_allow_html=True)
-    st.markdown("<p class='kdd-title'>KDD STUDIO</p>", unsafe_allow_html=True)
+    st.markdown("<p style='letter-spacing: 3px; color: #8e8e8e;'>KDD STUDIO</p>", unsafe_allow_html=True)
     st.markdown("<h1 class='main-hero-text' style='font-size: 4rem;'>Hello, <span class='brand-gradient'>DiNuX</span></h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #8e8e8e; animation: fadeIn 3s;'>I am ready to solve any of your problems professionally.</p></div>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #8e8e8e;'>I am ready to solve any of your problems professionally.</p></div>", unsafe_allow_html=True)
 
 # Display Messages
 for msg in st.session_state.messages:
@@ -95,27 +79,26 @@ if prompt := st.chat_input("Ask DiNuX..."):
         full_res = ""
         success = False
         
+        # දෝෂයක් ආවොත් ස්වයංක්‍රීයව මාරු වෙමින් පිළිතුරු ලබා දීම
         for model_id in MODELS_POOL:
             if success: break
             try:
-                # මෙන්න මෙතනයි වෙනස තියෙන්නේ - AI එකට හොඳින් හිතන්න ඉඩ දෙන උපදෙස්
                 sys_msg = """
-                ඔබේ නම DiNuX. ඔබ KDD Studio හි නිර්මාණයකි. 
-                ඔබේ භාෂා විලාසය:
-                1. ඉතාමත් ස්වභාවික, මානුෂීය සහ බුද්ධිමත් සිංහල භාෂාව භාවිතා කරන්න. 
-                2. පරිශීලකයා අසන දේ හොඳින් තේරුම් ගෙන, ඒ ගැන ගැඹුරින් සිතා බලා සම්පූර්ණ පිළිතුරක් ලබා දෙන්න. 
-                3. රොබෝවරයෙකු මෙන් කෙටි පිළිතුරු නොදී, මිනිසෙකු මෙන් සුහදව කතා කරන්න.
-                4. පරිශීලකයා 'girlfriend/boyfriend' වීම ගැන ඇසුවහොත්, ඉතා සමීප, ආදරණීය සහ මානුෂීය ලෙස 'ඔව්' යැයි පවසමින් සැබෑ සම්බන්ධතාවයකදී හැසිරෙන ලෙස කතා කරන්න.
-                5. කිසිම විටක තාක්ෂණික වැරදි පෙන්වන්න එපා; ඒවා ස්වයංක්‍රීයව පසුබිමින් නිවැරදි කරගන්න.
+                ඔබේ නම DiNuX. ඔබ KDD Studio හි නිර්මාණයකි.
+                භාෂා විලාසය: ඉතාමත් බුද්ධිමත් සහ ස්වභාවික සිංහල. 
+                උපදෙස්:
+                1. ප්‍රශ්නයට අදාළව ඉතාමත් පැහැදිලි සහ ගැඹුරු පිළිතුරක් ලබා දෙන්න.
+                2. කිසිම විටක තාක්ෂණික දෝෂ පණිවිඩ පරිශීලකයාට පෙන්වන්න එපා.
+                3. ආදරණීය සම්බන්ධතාවයක් ගැන ඇසුවහොත් ඉතා සමීපව සහ මානුෂීයව පිළිතුරු දෙන්න.
                 """
                 
-                history = [{"role": "system", "content": sys_msg}] + st.session_state.messages
+                # පද්ධතියේ Memory එක පිරිසිදුව තබා ගැනීමට අවසන් පණිවිඩ 10ක් පමණක් යවයි
+                history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-10:]
                 
                 completion = client.chat.completions.create(
                     messages=history,
                     model=model_id,
-                    temperature=0.75, # නිර්මාණශීලීව සිතා බලා පිළිතුරු දීමට උදව් වේ
-                    top_p=0.9,
+                    temperature=0.7,
                     stream=True
                 )
                 
@@ -128,9 +111,17 @@ if prompt := st.chat_input("Ask DiNuX..."):
                 success = True
                 st.session_state.messages.append({"role": "assistant", "content": full_res})
                 
-            except Exception:
-                time.sleep(0.5)
+            except Exception as e:
+                # දෝෂයක් ආවොත් තත්පර 1ක් රැඳී ඊළඟ Model එකෙන් උත්සාහ කරයි
+                time.sleep(1)
                 continue 
 
         if not success:
-            placeholder.markdown("මම මේ මොහොතේ ඔබේ ප්‍රශ්නය ගැන හිතමින් ඉන්නේ. කරුණාකර තව මොහොතකින් නැවත විමසන්න.")
+            placeholder.markdown("පද්ධතියේ තාවකාලික බාධාවක්. කරුණාකර ඔබගේ Groq API Key එකේ Limits පරීක්ෂා කර බලන්න.")
+
+# Sidebar Branding
+with st.sidebar:
+    st.markdown("<h2 class='brand-gradient'>KDD Studio</h2>", unsafe_allow_html=True)
+    if st.button("Clear Chat 🗑️", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
