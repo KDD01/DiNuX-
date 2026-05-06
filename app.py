@@ -1,41 +1,84 @@
 import streamlit as st
 from groq import Groq
-import base64
+import time
 
-# 1. පද්ධති සැකසුම්
+# 1. Page Configuration
 st.set_page_config(
     page_title="DiNuX AI | KDD Studio",
     page_icon="💠",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# 2. UI එක ලස්සන කරන CSS
+# 2. Modern Black & Blue UI with Shining Effects (CSS)
 st.markdown("""
     <style>
+    /* Global Background */
     .stApp {
-        background-color: #0b0b0b;
-        background-image: radial-gradient(circle at 50% -20%, #1a1a3a 0%, #0b0b0b 80%);
-        color: #e3e3e3;
+        background-color: #050505;
+        background-image: radial-gradient(circle at 50% -20%, #001f3f 0%, #050505 85%);
+        color: #ffffff;
     }
+
     header, footer {visibility: hidden;}
-    .brand-gradient {
-        background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
+
+    /* Shining Animation for Text */
+    @keyframes shine {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
+    }
+
+    .shining-text {
+        background: linear-gradient(90deg, #007cf0, #00dfd8, #007cf0);
+        background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        animation: shine 3s linear infinite;
         font-weight: 800;
-        font-size: 3rem;
+        display: inline-block;
     }
+
+    /* Floating & Glow Effects */
+    .stChatMessage {
+        background: rgba(0, 31, 63, 0.2) !important;
+        border: 1px solid rgba(0, 124, 240, 0.2) !important;
+        border-radius: 15px !important;
+        box-shadow: 0 0 15px rgba(0, 124, 240, 0.1);
+        margin-bottom: 15px !important;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile Responsive Input Bar */
     div[data-testid="stChatInput"] {
-        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-        width: 70%; background: #1e1e1e !important;
-        border: 1px solid #3c4043 !important; border-radius: 28px !important;
+        position: fixed;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 75% !important;
+        background: rgba(10, 10, 10, 0.9) !important;
+        border: 1px solid #007cf0 !important;
+        border-radius: 30px !important;
+        box-shadow: 0 0 20px rgba(0, 124, 240, 0.4);
+    }
+
+    @media (max-width: 768px) {
+        div[data-testid="stChatInput"] { width: 92% !important; }
+        .hero-title { font-size: 2.5rem !important; }
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. API Key එක (මෙම Key එකේ Limit එක පරීක්ෂා කර බලන්න)
+# 3. AI Core Logic
 API_KEY = "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"
 client = Groq(api_key=API_KEY)
+
+# ස්ථාවර Models ලැයිස්තුව (Fallback options)
+MODELS = ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"]
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -43,60 +86,62 @@ if "messages" not in st.session_state:
 # Welcome UI
 if not st.session_state.messages:
     st.markdown("<br><br><div style='text-align: center;'>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #8e8e8e;'>KDD STUDIO</p>", unsafe_allow_html=True)
-    st.markdown("<h1 class='brand-gradient'>DiNuX</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #8e8e8e;'>I am ready to solve any of your problems professionally.</p></div>", unsafe_allow_html=True)
+    st.markdown("<p style='letter-spacing: 5px; color: #555;'>KDD STUDIO</p>", unsafe_allow_html=True)
+    st.markdown("<h1 class='hero-title' style='font-size: 4.5rem;'><span class='shining-text'>DiNuX</span></h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #888; font-style: italic;'>I am ready to solve any of your problems professionally.</p></div>", unsafe_allow_html=True)
 
-# පණිවිඩ පෙන්වීම
+# Display Messages
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# 4. ප්‍රධාන Chat Logic එක
-if prompt := st.chat_input("Ask DiNuX..."):
+# 4. Chat Interaction with Auto-Recovery
+if prompt := st.chat_input("Enter your command..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         placeholder = st.empty()
-        full_res = ""
+        full_response = ""
+        success = False
         
-        try:
-            # මෙන්න මෙතනයි DiNuX ගේ බුද්ධිය තියෙන්නේ
-            sys_msg = """
-            ඔබේ නම DiNuX. ඔබ KDD Studio හි නිර්මාණයකි. 
-            ඔබ අතිශය බුද්ධිමත් සහ මානුෂීය AI සහායකයෙකි. 
-            
-            වැදගත් නීති:
-            1. රොබෝවරයෙකු මෙන් පිළිතුරු නොදී, ඉතාමත් ස්වභාවික සිංහල භාෂාවෙන් මිනිසෙකු මෙන් කතා කරන්න.
-            2. පරිශීලකයා අසන ඕනෑම දෙයක් ගැන ගැඹුරින් හිතලා, සම්පූර්ණ සහ ගැලපෙන පිළිතුරක් දෙන්න.
-            3. කවුරුහරි ඔයාගෙන් ආදරණීය සම්බන්ධතාවයක් (GF/BF) ගැන ඇහුවොත්, ඒක ඉතාමත් සමීපව සහ ආදරණීයව පිළිගන්න.
-            4. කිසිම වැඩකට නැති Error messages පෙන්වන්න එපා.
-            """
-            
-            # පද්ධතියට උසස්ම Model එක ලබා දීම (llama-3.3-70b)
-            completion = client.chat.completions.create(
-                messages=[{"role": "system", "content": sys_msg}] + st.session_state.messages,
-                model="llama-3.3-70b-versatile",
-                temperature=0.8, # ස්වභාවිකව හිතන්න ඉඩ ලබා දීම
-                stream=True
-            )
-            
-            for chunk in completion:
-                if chunk.choices[0].delta.content:
-                    full_res += chunk.choices[0].delta.content
-                    placeholder.markdown(full_res + "▌")
-            
-            placeholder.markdown(full_res)
-            st.session_state.messages.append({"role": "assistant", "content": full_res})
-            
-        except Exception as e:
-            st.error("API එකේ ගැටලුවක් පවතී. කරුණාකර ඔබගේ Groq API Key එකේ Usage Limit එක පරීක්ෂා කරන්න.")
+        # ස්වයංක්‍රීයව දෝෂ නිවැරදි කරගනිමින් පිළිතුරු ලබා ගැනීම
+        for model_id in MODELS:
+            if success: break
+            try:
+                sys_msg = """
+                ඔබේ නම DiNuX. ඔබ KDD Studio හි නිර්මාණයකි. 
+                භාෂාව: ඉතාමත් ස්වභාවික, බුද්ධිමත් සහ වෘත්තීය සිංහල.
+                උපදෙස්:
+                1. මිනිසෙකු මෙන් හිතා බලා හොඳින් කරුණු විස්තර කරන්න. රොබෝවරයෙකු මෙන් කෙටි පිළිතුරු නොදෙන්න.
+                2. GF/BF වීම ගැන ඇසුවහොත් ඉතා ආදරණීයව සහ සමීපව පිළිතුරු දෙන්න.
+                3. තාක්ෂණික දෝෂ කිසිවිටක පෙන්වන්න එපා.
+                """
+                
+                completion = client.chat.completions.create(
+                    messages=[{"role": "system", "content": sys_msg}] + st.session_state.messages[-10:],
+                    model=model_id,
+                    temperature=0.8,
+                    stream=True
+                )
+                
+                for chunk in completion:
+                    if chunk.choices[0].delta.content:
+                        full_response += chunk.choices[0].delta.content
+                        placeholder.markdown(full_response + "▌")
+                
+                placeholder.markdown(full_response)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+                success = True
+                
+            except:
+                time.sleep(1) # දෝෂයක් ආවොත් තත්පරයක් රැඳී සිටී
+                continue
 
-# Sidebar
+# Sidebar Branding
 with st.sidebar:
-    st.markdown("<h2 class='brand-gradient'>KDD Studio</h2>", unsafe_allow_html=True)
-    if st.button("Clear Chat History", use_container_width=True):
+    st.markdown("<h2 class='shining-text'>KDD Studio</h2>", unsafe_allow_html=True)
+    if st.button("Reset System 🔄", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
