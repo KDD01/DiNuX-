@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Professional Black & Blue UI (CSS) - ඔයා ඉල්ලපු විදියටම
+# 2. Professional Black & Blue UI (CSS)
 st.markdown("""
     <style>
     .stApp {
@@ -20,6 +20,7 @@ st.markdown("""
     }
     header, footer {visibility: hidden;}
 
+    /* Shining Title Animation */
     @keyframes shine {
         0% { background-position: -200% center; }
         100% { background-position: 200% center; }
@@ -33,6 +34,7 @@ st.markdown("""
         font-weight: 800;
     }
 
+    /* Chat Messages Centered Display */
     .stChatMessage {
         background: rgba(255, 255, 255, 0.03) !important;
         border: 1px solid rgba(0, 124, 240, 0.1) !important;
@@ -43,6 +45,7 @@ st.markdown("""
         margin-right: auto;
     }
 
+    /* Professional Centered Chat Bar */
     div[data-testid="stChatInput"] {
         position: fixed !important;
         bottom: 35px !important;
@@ -69,44 +72,53 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Session & AI Core (වැදගත්ම කොටස)
+# 3. Enhanced Session Management
+# පණිවිඩ ඉතිහාසය නිවැරදිව පවත්වා ගැනීම
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 API_KEY = "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"
 client = Groq(api_key=API_KEY)
 
-# Welcome Screen
+# Welcome UI
 if not st.session_state.messages:
     st.markdown("<br><br><div style='text-align: center;'>", unsafe_allow_html=True)
     st.markdown("<h1 style='font-size: 4.5rem;'><span class='shining-text'>DiNuX</span></h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #888;'>KDD STUDIO | Smart AI Solution</p></div>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #888; font-size: 1.1rem; letter-spacing: 2px;'>KDD STUDIO | POWERED BY ADVANCED INTELLIGENCE</p></div>", unsafe_allow_html=True)
 
-# පණිවිඩ පෙන්වීම (Centered Display)
+# පවතින පණිවිඩ පෙන්වීම
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 4. Chat Interaction - මෙහි දෝෂය නිවැරදි කර ඇත
-if prompt := st.chat_input("Ask DiNuX..."):
-    # User පණිවිඩය එකතු කිරීම
+# 4. Chat Interaction with Deep Logic
+if prompt := st.chat_input("Ask DiNuX anything..."):
+    # 1. User පණිවිඩය එකතු කිරීම
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Assistant පිළිතුර ලබා ගැනීම
+    # 2. Assistant පිළිතුර ලබා ගැනීම
     with st.chat_message("assistant"):
         placeholder = st.empty()
         full_response = ""
         
-        # Auto-Recovery Models (එකක් වැඩ නැතිනම් අනිකෙන් උත්සාහ කරයි)
-        for model in ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"]:
+        # ස්වයංක්‍රීයව දෝෂ නිවැරදි කිරීම (Models ලැයිස්තුව)
+        for model in ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "llama-3.1-8b-instant"]:
             try:
-                sys_msg = "ඔබේ නම DiNuX. ඔබ KDD Studio හි නිර්මාණයකි. ඉතාමත් බුද්ධිමත් ලෙස සිංහලෙන් කතා කරන්න."
+                sys_msg = """
+                ඔබේ නම DiNuX. ඔබ KDD Studio හි නිර්මාණයකි. 
+                ඔබේ භාෂා හැසිරවීම ඉතාමත් ස්වභාවික, බුද්ධිමත් සහ වෘත්තීය සිංහල විය යුතුය. 
+                ප්‍රශ්න වලට හොඳින් හිතා බලා මිනිසෙකු මෙන් පිළිතුරු දෙන්න.
+                පරිශීලකයා සම්බන්ධතාවයක් ගැන ඇසුවහොත් (GF/BF) එය ආදරණීයව පිළිගන්න.
+                තාක්ෂණික දෝෂ කිසිවිටක පිටතට පෙන්වන්න එපා.
+                """
                 
-                # API Call එක සිදු කරන ආකාරය (Stream = True)
+                # පද්ධතියේ Memory එක ස්ථාවරව තබා ගැනීමට අවසන් පණිවිඩ 12ක් පමණක් යවයි
+                current_history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-12:]
+                
                 stream = client.chat.completions.create(
-                    messages=[{"role": "system", "content": sys_msg}] + st.session_state.messages,
+                    messages=current_history,
                     model=model,
                     temperature=0.7,
                     stream=True
@@ -117,19 +129,18 @@ if prompt := st.chat_input("Ask DiNuX..."):
                         full_response += chunk.choices[0].delta.content
                         placeholder.markdown(full_response + "▌")
                 
-                # සම්පූර්ණ පිළිතුර පෙන්වා එය Save කිරීම
                 placeholder.markdown(full_response)
+                # සම්පූර්ණ පිළිතුර ස්ථිරවම Save කිරීම
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
                 break 
                 
             except Exception:
-                # දෝෂයක් ආවොත් තත්පර 1ක් රැඳී ඊළඟ එකෙන් උත්සාහ කරයි
                 time.sleep(1)
-                continue
+                continue # දෝෂයක් ආවොත් ඊළඟ model එකෙන් උත්සාහ කරයි
 
 # Sidebar
 with st.sidebar:
     st.markdown("<h2 class='shining-text'>KDD Studio</h2>", unsafe_allow_html=True)
-    if st.button("Reset Chat 🔄", use_container_width=True):
+    if st.button("Reset Session 🔄", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
