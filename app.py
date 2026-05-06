@@ -1,6 +1,5 @@
 import streamlit as st
 from groq import Groq
-import time
 
 # --- 1. CONFIGURATION ---
 API_KEY = "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"
@@ -10,7 +9,7 @@ try:
 except Exception as e:
     st.error(f"Setup Error: {e}")
 
-# --- 2. UI SETTINGS ---
+# --- 2. UI SETTINGS (PERFECT MOBILE VISIBILITY) ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
 
 st.markdown("""
@@ -22,7 +21,7 @@ st.markdown("""
         font-size: 42px;
         font-weight: 800;
         text-align: center;
-        background: linear-gradient(120deg, #ffffff 30%, #555555 50%, #ffffff 70%);
+        background: linear-gradient(120deg, #ffffff 30%, #666666 50%, #ffffff 70%);
         background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -34,9 +33,46 @@ st.markdown("""
     @keyframes shine { to { background-position: 200% center; } }
     
     .caption-text { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 14px; }
+    
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #080c14;
+    }
     </style>
     """, unsafe_allow_html=True)
 
+# --- 3. SIDEBAR MENU ---
+with st.sidebar:
+    st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=80)
+    st.title("DiNuX Menu")
+    st.markdown("---")
+    
+    # AI Settings
+    st.subheader("⚙️ AI Settings")
+    selected_model = st.selectbox(
+        "Choose AI Model",
+        ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"],
+        index=0
+    )
+    
+    temp_val = st.slider("Creativity (Temperature)", 0.0, 1.0, 0.7)
+    
+    st.markdown("---")
+    
+    # Utility Options
+    st.subheader("🛠️ Options")
+    if st.button("🗑️ Clear Conversation"):
+        st.session_state.messages = []
+        st.rerun()
+        
+    st.markdown("---")
+    
+    # About Section
+    st.subheader("🚀 KDD Studio")
+    st.info("DiNuX AI is a high-performance assistant developed for advanced logical reasoning.")
+    st.caption("© 2026 KDD Studio | Dinush Dilhara")
+
+# --- 4. MAIN INTERFACE ---
 st.markdown('<h1 class="shining-title">DiNuX AI Assistant</h1>', unsafe_allow_html=True)
 st.markdown('<p class="caption-text">Developed by Dinush Dilhara | Powered by KDD Studio</p>', unsafe_allow_html=True)
 
@@ -47,46 +83,37 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 3. STREAMING CHAT ENGINE (SUPER FAST & STABLE) ---
-if prompt := st.chat_input("DiNuX ගෙන් ඕනෑම දෙයක් අහන්න..."):
+# --- 5. CHAT LOGIC ---
+if prompt := st.chat_input("DiNuX සමඟ කතා කරන්න..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # ලැයිස්තුවේ ඇති ස්ථාවරම Models
-        models_to_try = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
-        
-        response_container = st.empty()
+        response_placeholder = st.empty()
         full_response = ""
-        success = False
         
-        for model_name in models_to_try:
-            if success: break
-            try:
-                # stream=True මඟින් එසැණින් පිළිතුර ලබාගැනීම
-                stream = client.chat.completions.create(
-                    model=model_name,
-                    messages=[
-                        {"role": "system", "content": "You are DiNuX AI, a logical and friendly Sinhala assistant created by Dinush Dilhara. Respond in natural Sinhala."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.6,
-                    stream=True,
-                )
-                
-                for chunk in stream:
-                    if chunk.choices[0].delta.content:
-                        full_response += chunk.choices[0].delta.content
-                        response_container.markdown(full_response + "▌")
-                
-                response_container.markdown(full_response)
-                st.session_state.messages.append({"role": "assistant", "content": full_response})
-                success = True
-            except Exception:
-                # එකක් වැඩ නැත්නම් අනිකට මාරු වෙයි
-                time.sleep(1)
-                continue
-        
-        if not success:
-            st.error("දැනට සර්වර් තදබදයක් පවතියි. කරුණාකර තත්පර කිහිපයකින් නැවත උත්සාහ කරන්න.")
+        try:
+            # Memory Management - අන්තිම පණිවිඩ 15 මතක තබා ගැනීම
+            chat_history = [
+                {"role": "system", "content": "You are DiNuX AI, a logical and friendly Sinhala assistant. Creator: Dinush Dilhara. Respond in natural Sinhala."}
+            ]
+            chat_history.extend(st.session_state.messages[-15:])
+            
+            completion = client.chat.completions.create(
+                model=selected_model, # Menu එකෙන් තෝරන model එක පාවිච්චි වේ
+                messages=chat_history,
+                temperature=temp_val, # Menu එකෙන් තෝරන පාලනය පාවිච්චි වේ
+                stream=True,
+            )
+            
+            for chunk in completion:
+                if chunk.choices[0].delta.content:
+                    full_response += chunk.choices[0].delta.content
+                    response_placeholder.markdown(full_response + "▌")
+            
+            response_placeholder.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+        except Exception as e:
+            st.error(f"Error: {e}")
