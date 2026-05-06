@@ -1,5 +1,6 @@
 import streamlit as st
 from groq import Groq
+import os
 
 # --- 1. CONFIGURATION ---
 API_KEY = "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"
@@ -9,7 +10,7 @@ try:
 except Exception as e:
     st.error(f"Setup Error: {e}")
 
-# --- 2. UI SETTINGS (PERFECT MOBILE VISIBILITY) ---
+# --- 2. UI SETTINGS ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
 
 st.markdown("""
@@ -34,7 +35,6 @@ st.markdown("""
     
     .caption-text { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 14px; }
     
-    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background-color: #080c14;
     }
@@ -43,12 +43,18 @@ st.markdown("""
 
 # --- 3. SIDEBAR MENU ---
 with st.sidebar:
-    # ඔයා එවපු අලුත්ම Logo එක මෙතනට ඇතුළත් කළා
-    st.image("https://r.jina.ai/i/6f9776d6545b4c91979b9b183617637e", width=150)
+    # පින්තූරය තිබේදැයි පරීක්ෂා කර පෙන්වීම
+    logo_path = "logo.png.png"
+    if os.path.exists(logo_path):
+        st.image(logo_path, use_container_width=True)
+    else:
+        # පින්තූරය නැතිනම් icon එකක් පෙන්වයි
+        st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=80)
+        st.warning("logo.png.png file එක GitHub එකට දාන්න.")
+        
     st.title("DiNuX Menu")
     st.markdown("---")
     
-    # AI Settings
     st.subheader("⚙️ AI Settings")
     selected_model = st.selectbox(
         "Choose AI Model",
@@ -60,7 +66,6 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Utility Options
     st.subheader("🛠️ Options")
     if st.button("🗑️ Clear Conversation"):
         st.session_state.messages = []
@@ -68,7 +73,6 @@ with st.sidebar:
         
     st.markdown("---")
     
-    # About Section
     st.subheader("🚀 KDD Studio")
     st.info("DiNuX AI is a high-performance assistant developed for advanced logical reasoning.")
     st.caption("© 2026 KDD Studio | Dinush Dilhara")
