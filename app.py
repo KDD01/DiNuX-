@@ -9,7 +9,7 @@ try:
 except Exception as e:
     st.error(f"Setup Error: {e}")
 
-# --- 2. UI SETTINGS (保持原样) ---
+# --- 2. UI SETTINGS ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖")
 
 st.markdown("""
@@ -26,7 +26,8 @@ st.markdown("""
         background-size: 80%;
         animation: shine 3s linear infinite;
         -webkit-background-clip: text;
-        -webkit-text-fill-color: rgba(255, 255, 255, 0.2);
+        /* මෙතන opacity එක 1.0 දක්වා වැඩි කළා එවිට පැහැදිලිව පෙනේ */
+        -webkit-text-fill-color: rgba(255, 255, 255, 1.0); 
     }
 
     @keyframes shine {
@@ -55,7 +56,6 @@ if prompt := st.chat_input("Ask DiNuX anything..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # වැඩ කරන Models කිහිපයක් පිළිවෙළට (එකක් වැඩ නැත්නම් අනිකට යනවා)
         models_to_try = ["llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768"]
         response_found = False
         
@@ -73,10 +73,9 @@ if prompt := st.chat_input("Ask DiNuX anything..."):
                     st.markdown(response)
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     response_found = True
-                    break # පිළිතුරක් ලැබුණොත් loop එකෙන් ඉවත් වෙනවා
-            except Exception as e:
-                # Model එක decommission වෙලා නම් ඊළඟ එකට යනවා
-                continue 
+                    break
+            except Exception:
+                continue
         
         if not response_found:
             st.error("කණගාටුයි, දැනට පවතින සියලුම AI මාදිලි අක්‍රියයි. කරුණාකර පසුව උත්සාහ කරන්න.")
