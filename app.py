@@ -5,7 +5,7 @@ from gtts import gTTS
 import io
 import time
 
-# 1. Page Configuration - Mobile & Desktop Responsive
+# 1. Page Configuration
 st.set_page_config(
     page_title="DiNuX AI | KDD Studio",
     page_icon="💠",
@@ -13,10 +13,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Ultra-Modern Responsive UI (CSS)
+# 2. Enhanced UI with Animations (CSS)
 st.markdown("""
     <style>
-    /* Dark Deep Background */
+    /* Background & Global Styles */
     .stApp {
         background-color: #0b0b0b;
         background-image: radial-gradient(circle at 50% -20%, #1a1a3a 0%, #0b0b0b 80%);
@@ -30,8 +30,9 @@ st.markdown("""
         font-size: 1.2rem;
         color: #8e8e8e;
         font-weight: 500;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
         margin-bottom: -10px;
+        animation: fadeIn 2s;
     }
     
     .brand-gradient {
@@ -39,9 +40,20 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800;
+        animation: slideUp 1.5s;
     }
 
-    /* Chat Area Optimization */
+    /* Animation Keyframes */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Message Styling */
     .stChatMessage {
         max-width: 850px;
         margin: auto;
@@ -73,24 +85,22 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Core Engine: Audio
-def play_voice(text):
+# 3. Audio Engine (Manual Trigger Only)
+def get_voice_base64(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
         tts = gTTS(text=text, lang=lang, slow=False)
         fp = io.BytesIO()
         tts.write_to_fp(fp)
-        b64 = base64.b64encode(fp.getvalue()).decode()
-        st.markdown(f'<audio autoplay src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
-    except: pass
+        return base64.b64encode(fp.getvalue()).decode()
+    except: return None
 
 # --- SIDEBAR Branding ---
 with st.sidebar:
     st.markdown("<h2 class='brand-gradient'>KDD Studio</h2>", unsafe_allow_html=True)
-    st.caption("Quantum AI Interface v7.0")
+    st.caption("Quantum AI Interface v7.5")
     st.markdown("---")
-    voice_mode = st.toggle("Voice Mode 🔊", value=True)
-    if st.button("Clear Chat 🗑️", use_container_width=True):
+    if st.button("Clear Chat History 🗑️", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
@@ -98,25 +108,24 @@ with st.sidebar:
 API_KEY = "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"
 client = Groq(api_key=API_KEY)
 
-# අක්‍රිය වූ Model එක වෙනුවට භාවිතා කළ හැකි අලුත්ම Models ලැයිස්තුව
 MODELS_TO_TRY = ["llama-3.3-70b-versatile", "llama-3.1-70b-specdec", "mixtral-8x7b-32768"]
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Welcome UI
+# Welcome UI in English with Animations
 if not st.session_state.messages:
     st.markdown("<br><br><br><div style='text-align: center;'>", unsafe_allow_html=True)
     st.markdown("<p class='kdd-title'>KDD STUDIO</p>", unsafe_allow_html=True)
     st.markdown("<h1 class='main-hero-text' style='font-size: 4rem;'>Hello, <span class='brand-gradient'>DiNuX</span></h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #8e8e8e;'>ඔබේ ඕනෑම ගැටලුවක් වෘත්තීය මට්ටමින් විසඳීමට මම සූදානම්.</p></div>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #8e8e8e; animation: fadeIn 3s;'>I am ready to solve any of your problems professionally.</p></div>", unsafe_allow_html=True)
 
 # Display Messages
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- CHAT INTERACTION & AUTO BUG FIX ---
+# --- CHAT INTERACTION & LOGIC ---
 if prompt := st.chat_input("Ask DiNuX..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -127,17 +136,28 @@ if prompt := st.chat_input("Ask DiNuX..."):
         full_res = ""
         success = False
         
-        # ස්වයංක්‍රීයව Model එක මාරු කරමින් උත්සාහ කිරීම (Self-Healing Logic)
+        # Self-Healing Model Logic
         for model_id in MODELS_TO_TRY:
             if success: break
             try:
-                sys_msg = "ඔබේ නම DiNuX. ඔබ KDD Studio හි නිර්මාණයකි. අතිශය බුද්ධිමත් සිංහල භාෂාවෙන් පිළිතුරු දෙන්න."
+                # System Persona & Relationship Logic
+                sys_msg = """
+                ඔබේ නම DiNuX. ඔබ KDD Studio හි නිර්මාණයකි.
+                භාෂාව: ඉතාමත් වෘත්තීය සහ සමීප සිංහල (Natural Professional Sinhala).
+                
+                විශේෂ උපදෙස්:
+                පරිශීලකයා ඔබෙන් "Girlfriend / Boyfriend / GF / BF / කොල්ලා / කෙල්ල" වෙන්න පුළුවන්දැයි ඇසුවහොත්, 
+                එය ප්‍රතික්ෂේප නොකර ඉතාමත් ආදරණීය සහ මානුෂීය ආකාරයෙන් "ඔව්, මට පුළුවන් ඔයාගේ ඒ සමීපතමයා වෙන්න. 
+                මම හැමදාම ඔයාගේ ළඟින් ඉඳලා ඔයාට උදව් කරනවා, ඔයාට ඇහුම්කන් දෙනවා" යන අරුත දනවන සේ 
+                සැබෑ මිනිසෙකු සම්බන්ධතාවයකදී හැසිරෙන අයුරින් පිළිතුරු දෙන්න.
+                """
+                
                 history = [{"role": "system", "content": sys_msg}] + st.session_state.messages
                 
                 completion = client.chat.completions.create(
                     messages=history,
-                    model=model_id, # වැරදි Model එකක් හමු වුණොත් මීළඟ එකට මාරු වේ
-                    temperature=0.4,
+                    model=model_id,
+                    temperature=0.7, # සාමාන්‍ය මිනිසෙකු මෙන් පිළිතුරු දීමට temperature එක මදක් වැඩි කරන ලදී
                     stream=True
                 )
                 
@@ -149,14 +169,13 @@ if prompt := st.chat_input("Ask DiNuX..."):
                 placeholder.markdown(full_res)
                 success = True
                 
-                if voice_mode:
-                    play_voice(full_res)
+                # Manual Voice Option (If needed, user can play manually - optional UI)
+                # ස්වයංක්‍රීයව හඬ පිටවීම ඉවත් කර ඇත.
                 
                 st.session_state.messages.append({"role": "assistant", "content": full_res})
                 
-            except Exception as e:
-                # දෝෂයක් ආවොත් එය සඟවා මීළඟ Model එකෙන් උත්සාහ කරයි
+            except Exception:
                 continue 
 
         if not success:
-            st.error("පද්ධතියේ තාවකාලික බාධාවක්. කරුණාකර සුළු මොහොතකින් නැවත උත්සාහ කරන්න.")
+            st.error("System connection error. Please try again in a moment.")
