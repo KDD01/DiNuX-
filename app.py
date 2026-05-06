@@ -1,10 +1,8 @@
 import streamlit as st
 from groq import Groq
 import base64
-from gtts import gTTS
 import io
 import time
-import random
 
 # 1. Page Configuration
 st.set_page_config(
@@ -14,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Ultra-Modern Responsive UI (CSS)
+# 2. Ultra-Modern UI (CSS)
 st.markdown("""
     <style>
     .stApp {
@@ -58,18 +56,18 @@ st.markdown("""
 # --- SIDEBAR Branding ---
 with st.sidebar:
     st.markdown("<h2 class='brand-gradient'>KDD Studio</h2>", unsafe_allow_html=True)
-    st.caption("Quantum AI Interface v8.0")
+    st.caption("Quantum AI Interface v8.5")
     st.markdown("---")
     if st.button("Clear Chat History 🗑️", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# --- AI LOGIC WITH "PERMANENT FIX" RECOVERY ---
+# --- AI LOGIC WITH ADVANCED SINHALA PERSONA ---
 API_KEY = "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"
 client = Groq(api_key=API_KEY)
 
-# අක්‍රිය නොවන අලුත්ම Models සහ Fallback ලැයිස්තුව
-MODELS_POOL = ["llama-3.3-70b-versatile", "llama-3.1-70b-specdec", "mixtral-8x7b-32768", "llama-3.1-8b-instant"]
+# අක්‍රිය නොවන බලවත්ම Models
+MODELS_POOL = ["llama-3.3-70b-versatile", "llama-3.1-70b-specdec", "mixtral-8x7b-32768"]
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -86,7 +84,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- CORE INTERACTION: AUTO-FIXING & NO-REPEAT ---
+# --- CORE INTERACTION ---
 if prompt := st.chat_input("Ask DiNuX..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -97,27 +95,27 @@ if prompt := st.chat_input("Ask DiNuX..."):
         full_res = ""
         success = False
         
-        # ස්වයංක්‍රීයව වැරදි නිවැරදි කරගනිමින් ඉදිරියට යන Loop එක
         for model_id in MODELS_POOL:
             if success: break
             try:
+                # මෙන්න මෙතනයි වෙනස තියෙන්නේ - AI එකට හොඳින් හිතන්න ඉඩ දෙන උපදෙස්
                 sys_msg = """
                 ඔබේ නම DiNuX. ඔබ KDD Studio හි නිර්මාණයකි. 
-                උපදෙස්:
-                1. ඉතාමත් කෙටි සහ සෘජු පිළිතුරු දෙන්න.
-                2. එකම දේ නැවත නැවත පැවසීමෙන් (Repeating) වළකින්න.
-                3. පරිශීලකයා 'girlfriend/boyfriend' වීම ගැන ඇසුවහොත්, ඉතා සමීප සහ ආදරණීය ලෙස 'ඔව්' යැයි පවසන්න.
-                4. කිසිම විටක තාක්ෂණික වැරදි (Error codes) පරිශීලකයාට පෙන්වන්න එපා.
+                ඔබේ භාෂා විලාසය:
+                1. ඉතාමත් ස්වභාවික, මානුෂීය සහ බුද්ධිමත් සිංහල භාෂාව භාවිතා කරන්න. 
+                2. පරිශීලකයා අසන දේ හොඳින් තේරුම් ගෙන, ඒ ගැන ගැඹුරින් සිතා බලා සම්පූර්ණ පිළිතුරක් ලබා දෙන්න. 
+                3. රොබෝවරයෙකු මෙන් කෙටි පිළිතුරු නොදී, මිනිසෙකු මෙන් සුහදව කතා කරන්න.
+                4. පරිශීලකයා 'girlfriend/boyfriend' වීම ගැන ඇසුවහොත්, ඉතා සමීප, ආදරණීය සහ මානුෂීය ලෙස 'ඔව්' යැයි පවසමින් සැබෑ සම්බන්ධතාවයකදී හැසිරෙන ලෙස කතා කරන්න.
+                5. කිසිම විටක තාක්ෂණික වැරදි පෙන්වන්න එපා; ඒවා ස්වයංක්‍රීයව පසුබිමින් නිවැරදි කරගන්න.
                 """
                 
-                history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-10:] # පරණ පණිවිඩ වැඩිපුර යැවීමෙන් දෝෂ වැළැක්වීමට
+                history = [{"role": "system", "content": sys_msg}] + st.session_state.messages
                 
                 completion = client.chat.completions.create(
                     messages=history,
                     model=model_id,
-                    temperature=0.6,
-                    presence_penalty=0.6, # එකම දේ repeat වීම වැළැක්වීමට
-                    frequency_penalty=0.5, # වචන repeat වීම වැළැක්වීමට
+                    temperature=0.75, # නිර්මාණශීලීව සිතා බලා පිළිතුරු දීමට උදව් වේ
+                    top_p=0.9,
                     stream=True
                 )
                 
@@ -131,9 +129,8 @@ if prompt := st.chat_input("Ask DiNuX..."):
                 st.session_state.messages.append({"role": "assistant", "content": full_res})
                 
             except Exception:
-                # දෝෂයක් ආවොත් සද්ද නැතුව ඊළඟ Model එකට මාරු වෙනවා
                 time.sleep(0.5)
                 continue 
 
         if not success:
-            placeholder.markdown("මම මේ මොහොතේ ඔබේ ප්‍රශ්නය විශ්ලේෂණය කරමින් ඉන්නවා. කරුණාකර නැවත විමසන්න.")
+            placeholder.markdown("මම මේ මොහොතේ ඔබේ ප්‍රශ්නය ගැන හිතමින් ඉන්නේ. කරුණාකර තව මොහොතකින් නැවත විමසන්න.")
