@@ -43,7 +43,8 @@ st.markdown("""
 
 # --- 3. SIDEBAR MENU ---
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=80)
+    # ඔයා එවපු අලුත්ම Logo එක මෙතනට ඇතුළත් කළා
+    st.image("https://r.jina.ai/i/6f9776d6545b4c91979b9b183617637e", width=150)
     st.title("DiNuX Menu")
     st.markdown("---")
     
@@ -94,16 +95,15 @@ if prompt := st.chat_input("DiNuX සමඟ කතා කරන්න..."):
         full_response = ""
         
         try:
-            # Memory Management - අන්තිම පණිවිඩ 15 මතක තබා ගැනීම
             chat_history = [
                 {"role": "system", "content": "You are DiNuX AI, a logical and friendly Sinhala assistant. Creator: Dinush Dilhara. Respond in natural Sinhala."}
             ]
             chat_history.extend(st.session_state.messages[-15:])
             
             completion = client.chat.completions.create(
-                model=selected_model, # Menu එකෙන් තෝරන model එක පාවිච්චි වේ
+                model=selected_model,
                 messages=chat_history,
-                temperature=temp_val, # Menu එකෙන් තෝරන පාලනය පාවිච්චි වේ
+                temperature=temp_val,
                 stream=True,
             )
             
