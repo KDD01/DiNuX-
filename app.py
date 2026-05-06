@@ -16,26 +16,26 @@ st.markdown("""
     <style>
     .stApp { background-color: #030712; color: white; }
     
+    /* SHINING WHITE TITLE - FIXED FOR VISIBILITY & EFFECT */
     .shining-title {
         color: #ffffff;
         font-size: 45px;
         font-weight: 800;
         text-align: center;
-        background: linear-gradient(90deg, #333, #fff, #333);
-        background-repeat: no-repeat;
-        background-size: 80%;
-        animation: shine 3s linear infinite;
+        /* Shining effect එක සඳහා gradient එක */
+        background: linear-gradient(120deg, #ffffff 30%, #444444 50%, #ffffff 70%);
+        background-size: 200% auto;
         -webkit-background-clip: text;
-        /* මෙතන opacity එක 1.0 දක්වා වැඩි කළා එවිට පැහැදිලිව පෙනේ */
-        -webkit-text-fill-color: rgba(255, 255, 255, 1.0); 
+        -webkit-text-fill-color: transparent;
+        animation: shine 3s linear infinite;
+        margin-bottom: 5px;
     }
 
     @keyframes shine {
-        0% { background-position: -500%; }
-        100% { background-position: 500%; }
+        to { background-position: 200% center; }
     }
     
-    .caption-text { text-align: center; color: #94a3b8; margin-bottom: 30px; }
+    .caption-text { text-align: center; color: #94a3b8; margin-bottom: 30px; font-weight: 500; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -49,8 +49,8 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 3. CHAT LOGIC WITH AUTO-FIX ---
-if prompt := st.chat_input("Ask DiNuX anything..."):
+# --- 3. CHAT LOGIC WITH LOGICAL SINHALA SUPPORT ---
+if prompt := st.chat_input("DiNuX ගෙන් ඕනෑම දෙයක් අහන්න..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -64,7 +64,13 @@ if prompt := st.chat_input("Ask DiNuX anything..."):
                 completion = client.chat.completions.create(
                     model=model_name,
                     messages=[
-                        {"role": "system", "content": "You are DiNuX AI, a friendly and professional assistant created by Dinush Dilhara. Use user-friendly language."},
+                        {
+                            "role": "system", 
+                            "content": "You are DiNuX AI, a highly logical and friendly assistant created by Dinush Dilhara. "
+                                       "Respond primarily in Sinhala unless asked otherwise. Use a natural, helpful, "
+                                       "and peer-like tone. Think critically before answering to provide the most accurate "
+                                       "and helpful response to the user."
+                        },
                         {"role": "user", "content": prompt}
                     ],
                 )
