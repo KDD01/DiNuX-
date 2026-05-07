@@ -1,4 +1,2 @@
 streamlit
 google-generativeai
-duckduckgo_search
-gTTS
