@@ -11,16 +11,18 @@ try:
     safety_settings = [
         {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
     ]
 except Exception as e:
-    st.error("Neural Connection Error")
+    st.error("Neural Connection Error. Check API Key.")
 
-# --- 2. ADVANCED CSS (Dynamic UI & Overlay) ---
+# --- 2. ADVANCED CSS (Clean & Professional) ---
 st.set_page_config(page_title="DiNuX ai Pro", layout="wide", page_icon="🧬")
 
 st.markdown("""
     <style>
-    /* Dark Theme Base */
+    /* Dark Theme */
     .stApp { background: #0d1117; color: #e6edf3; }
     
     /* Branding */
@@ -36,39 +38,30 @@ st.markdown("""
     .power-text { font-size: 10px; color: #3b82f6; letter-spacing: 2px; font-weight: bold; text-transform: uppercase; }
     @keyframes shine { to { background-position: 200% center; } }
 
-    /* Top Left Fixed Settings Icon */
-    .settings-trigger {
-        position: fixed;
-        top: 60px; /* Sidebar අයිකනයට පහළින් */
-        left: 15px;
-        z-index: 1000;
-        cursor: pointer;
-    }
-
-    /* Professional Card Styling for Control Center */
-    .control-panel {
-        background: rgba(22, 27, 34, 0.95);
+    /* Control Panel Box (Separate from Chat) */
+    .control-panel-box {
+        background: rgba(22, 27, 34, 0.9);
         border: 1px solid #30363d;
-        border-radius: 15px;
-        padding: 30px;
-        margin-top: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
 
-    /* Fixed Footer & Copyright */
+    /* Fixed Footer */
     .fixed-footer {
         position: fixed;
         bottom: 0; left: 0; width: 100%;
         background: #0d1117;
-        padding: 5px 0;
+        padding: 8px 0;
         border-top: 1px solid #30363d;
         text-align: center;
         z-index: 998;
     }
     .copyright { font-size: 10px; color: #8b949e; }
 
-    /* Custom Chat Message */
-    .stChatMessage { border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(48, 54, 61, 0.2); }
+    /* Chat Styling */
+    .stChatMessage { border-radius: 12px; border: 1px solid rgba(48, 54, 61, 0.2); }
     </style>
     """, unsafe_allow_html=True)
 
@@ -77,7 +70,16 @@ with st.sidebar:
     st.markdown("<h2 style='color:#58a6ff;'>🧬 DiNuX AI</h2>", unsafe_allow_html=True)
     st.info("**Developer:** Dinush Dilhara\n\n**Studio:** KDD STUDIO")
     st.write("---")
-    if st.button("🗑️ Clear Chat History"):
+    
+    # ⚙️ Control Center Toggle (Top Left Position)
+    if 'show_control' not in st.session_state:
+        st.session_state.show_control = False
+    
+    if st.button("⚙️ Control Center Settings"):
+        st.session_state.show_control = not st.session_state.show_control
+    
+    st.write("---")
+    if st.button("🗑️ Clear History"):
         st.session_state.messages = []
         st.rerun()
 
@@ -89,94 +91,88 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- 5. TOP-LEFT CONTROL CENTER TRIGGER ---
-# Session state එක පාවිච්චි කරලා dialogue එක open/close කරනවා
-if 'show_settings' not in st.session_state:
-    st.session_state.show_settings = False
-
-# මෙනු අයිකනයට පහළින් ⚙️ අයිකනය පෙන්වීම
-st.sidebar.markdown("---")
-if st.sidebar.button("⚙️ Control Center"):
-    st.session_state.show_settings = not st.session_state.show_settings
-
-# --- 6. SETTINGS DIALOGUE BOX (The Modal) ---
-if st.session_state.show_settings:
+# --- 5. CONTROL CENTER DIALOGUE (Separate Container) ---
+# මෙය Chat එක ඇතුළේ නොවී වෙනමම ඉහළින් දිග හැරේ
+if st.session_state.show_control:
     with st.container():
-        st.markdown('<div class="control-panel">', unsafe_allow_html=True)
-        c1, c2 = st.columns([0.9, 0.1])
-        with c1:
-            st.subheader("🛠️ Advanced Control Center")
-        with c2:
+        st.markdown('<div class="control-panel-box">', unsafe_allow_html=True)
+        col_title, col_close = st.columns([0.9, 0.1])
+        with col_title:
+            st.subheader("🛠️ System Configuration")
+        with col_close:
             if st.button("❌"):
-                st.session_state.show_settings = False
+                st.session_state.show_control = False
                 st.rerun()
         
-        st.write("---")
-        opt1, opt2 = st.columns(2)
-        with opt1:
-            selected_model = st.selectbox("Intelligence Core", ["gemini-1.5-flash", "gemini-1.5-pro"])
-            st.markdown("**System Health:** Stable ✅")
-        with opt2:
-            uploaded_file = st.file_uploader("Upload Vision Source", type=["png", "jpg", "jpeg"])
-            if uploaded_file:
-                st.success("Vision Active")
-        
+        c1, c2 = st.columns(2)
+        with c1:
+            selected_model = st.selectbox("Neural Engine", ["gemini-1.5-flash", "gemini-1.5-pro"])
+            st.write("Status: **Optimal**")
+        with c2:
+            uploaded_file = st.file_uploader("Vision Input", type=["png", "jpg", "jpeg"])
         st.markdown('</div>', unsafe_allow_html=True)
 else:
-    # default settings variables if modal is closed
     selected_model = "gemini-1.5-flash"
     uploaded_file = None
 
-# --- 7. CHAT INTERFACE ---
+# --- 6. CHAT INTERFACE ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Scrollable chat area
+# Chat message container
 chat_placeholder = st.container()
+
 with chat_placeholder:
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-# Spacer to prevent chat being hidden by footer
-st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
+# Spacing for footer
+st.markdown("<br><br><br><br><br>", unsafe_allow_html=True)
 
-# Fixed Chat Input
+# --- 7. INPUT & FOOTER ---
 prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
-# Fixed Copyright Footer
 st.markdown("""
     <div class="fixed-footer">
-        <div class="copyright">© 2026 KDD STUDIO | All Rights Reserved | Designed by Dinush Dilhara</div>
+        <div class="copyright">© 2026 KDD STUDIO | Designed by Dinush Dilhara</div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- 8. BRAIN LOGIC ---
+# --- 8. STABLE BRAIN LOGIC (Error Fixed) ---
 if prompt:
+    # 1. Add User Message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with chat_placeholder:
         with st.chat_message("user"):
             st.markdown(prompt)
 
+    # 2. Assistant Reply Logic
     with chat_placeholder:
         with st.chat_message("assistant"):
-            res_area = st.empty()
-            full_res = ""
+            response_area = st.empty()
+            full_response = ""
+            
             try:
+                # API Call Setup
                 model = genai.GenerativeModel(model_name=selected_model)
-                instruction = "You are DiNuX AI by Dinush Dilhara. Speak in friendly Sinhala."
                 
-                inputs = [instruction, prompt]
+                # Instruction and Content
+                contents = [f"System: You are DiNuX AI by Dinush Dilhara. Reply in friendly Sinhala.", prompt]
                 if uploaded_file:
-                    inputs.append(Image.open(uploaded_file))
+                    contents.append(Image.open(uploaded_file))
 
-                response = model.generate_content(inputs, stream=True)
+                # Generating Response
+                response = model.generate_content(contents, stream=True)
+                
                 for chunk in response:
                     if chunk.text:
-                        full_res += chunk.text
-                        res_area.markdown(full_res + "▌")
+                        full_response += chunk.text
+                        response_area.markdown(full_response + "▌")
                 
-                res_area.markdown(full_res)
-                st.session_state.messages.append({"role": "assistant", "content": full_res})
-            except Exception:
-                st.error("Brain connection lost. Retry.")
+                response_area.markdown(full_response)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+                
+            except Exception as e:
+                st.error("Brain connection failed. Please try again.")
+                # print(e) # Debugging සඳහා පමණි
