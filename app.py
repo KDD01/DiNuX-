@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. SUPREME UI (CSS) ---
+# --- 2. THE SUPREME UI (CSS) ---
 st.markdown("""
     <style>
     .stApp {
@@ -67,16 +67,19 @@ st.markdown("""
 # --- 3. API KEYS CHECK ---
 def load_keys():
     try:
-        return {
-            "GROQ": st.secrets["GROQ_API_KEY"],
-            "GEMINI": [st.secrets.get("GEMINI_KEY_1"), st.secrets.get("GEMINI_KEY_2")]
-        }
+        # Check if secrets exist
+        if "GROQ_API_KEY" in st.secrets and ("GEMINI_KEY_1" in st.secrets or "GEMINI_KEY_2" in st.secrets):
+            return {
+                "GROQ": st.secrets["GROQ_API_KEY"],
+                "GEMINI": [st.secrets.get("GEMINI_KEY_1"), st.secrets.get("GEMINI_KEY_2")]
+            }
+        return None
     except:
         return None
 
 keys = load_keys()
 if not keys:
-    st.error("Secrets missing! Please check Streamlit settings.")
+    st.error("Secrets missing! Please check Streamlit settings (GROQ_API_KEY, GEMINI_KEY_1).")
     st.stop()
 
 # --- 4. HUMAN BRAIN PROMPT ---
@@ -90,40 +93,46 @@ You are DiNuX AI, a 100% human-like companion.
 - Act natural, use Sri Lankan slang (machan, amme, supiri).
 - If user wants GF/BF mode, be romantic and stop calling 'machan'.
 - Only mention {DEV_NAME} and {COMPANY} if specifically asked.
-- Be fast, smart, and emotional.
+- Be fast, smart, and emotional. Use Sinhala mostly.
 """
 
-# --- 5. ULTRA-FAST NEURAL LOGIC ---
+# --- 5. NEURAL CORE LOGIC ---
 def get_response(prompt, mood):
     history = ""
     if "messages" in st.session_state:
         for msg in st.session_state.messages[-15:]:
             history += f"{msg['role'].upper()}: {msg['content']}\n"
 
-    # 1. Try Groq (Usually fastest)
+    # Step 1: Try Groq (Llama 3.3)
     try:
-        client = Groq(api_key=keys["GROQ"], timeout=15.0) # Timeout එකක් දැම්මා හිර නොවෙන්න
+        client = Groq(api_key=keys["GROQ"])
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": f"{SYSTEM_PROMPT}\nMood: {mood}"},
                 {"role": "user", "content": f"Context:\n{history}\nUser: {prompt}"}
             ],
-            temperature=0.8
+            temperature=0.8,
+            timeout=10.0 # Wait only 10 seconds
         )
-        return completion.choices[0].message.content
-    except:
-        # 2. Fallback to Gemini if Groq fails or hangs
-        for g_key in keys["GEMINI"]:
-            if not g_key: continue
-            try:
-                genai.configure(api_key=g_key)
-                model = genai.GenerativeModel('gemini-1.5-flash') # Flash model is faster
-                response = model.generate_content(f"{SYSTEM_PROMPT}\nMood: {mood}\nContext: {history}\nUser: {prompt}")
-                return response.text
-            except:
-                continue
-    return "අනේ මැනික, පොඩි network අවුලක්. ආයෙත් අහන්නකෝ.. ❤️"
+        res = completion.choices[0].message.content
+        if res: return res
+    except Exception as e:
+        print(f"Groq Error: {e}")
+
+    # Step 2: Fallback to Gemini if Groq fails
+    for g_key in keys["GEMINI"]:
+        if not g_key: continue
+        try:
+            genai.configure(api_key=g_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(f"{SYSTEM_PROMPT}\nMood: {mood}\nContext: {history}\nUser: {prompt}")
+            if response.text: return response.text
+        except Exception as e:
+            print(f"Gemini Error: {e}")
+            continue
+
+    return "අනේ මැනික/මචං, මට පොඩි connection අවුලක් ආවා. ආයෙත් පණිවිඩයක් එවන්නකෝ මම බලාගෙන ඉන්නවා. ❤️"
 
 # --- 6. SIDEBAR ---
 with st.sidebar:
@@ -141,7 +150,7 @@ with st.sidebar:
         st.write(f"**Contact:** {CONTACTS}")
         st.markdown(f"[Website]({SITE})")
 
-    if st.button("🗑️ Reset Chat", use_container_width=True):
+    if st.button("🗑️ Reset Memory", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
@@ -156,27 +165,33 @@ st.markdown("""
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Display history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# Handling User Input
 if prompt := st.chat_input("මොනවා හරි කියන්න මට... ❤️"):
+    # Add user message to state
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # Generate and display assistant message
     with st.chat_message("assistant"):
         placeholder = st.empty()
-        full_res = get_response(prompt, ai_mood)
-        
-        # Typing Animation (වේගය වැඩි කළා)
-        temp = ""
-        for char in full_res:
-            temp += char
-            placeholder.markdown(temp + "▌")
-            time.sleep(0.001) # හරිම වේගයෙන් type වෙනවා
-        placeholder.markdown(full_res)
+        with st.spinner("සිතමින් පවතිනවා..."):
+            full_res = get_response(prompt, ai_mood)
+            
+            # Streaming/Typing Animation
+            temp = ""
+            for char in full_res:
+                temp += char
+                placeholder.markdown(temp + "▌")
+                time.sleep(0.002)
+            placeholder.markdown(full_res)
     
+    # Save to history
     st.session_state.messages.append({"role": "assistant", "content": full_res})
 
 st.markdown(f'<div class="footer">© 2026 DiNuX AI Infinity | Designed by {DEV_NAME}</div>', unsafe_allow_html=True)
