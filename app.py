@@ -2,150 +2,166 @@ import streamlit as st
 import google.generativeai as genai
 import os
 from PIL import Image
-import plotly.graph_objects as go
 
 # --- 1. CONFIGURATION ---
 GEMINI_API_KEY = "AIzaSyBtKQ9XAelwCGDC6uD3UgEJzLC5bMM5FxQ" 
-genai.configure(api_key=GEMINI_API_KEY)
 
-# --- 2. ADVANCED UI DESIGN (IMAGE BASED) ---
-st.set_page_config(page_title="DiNuX ai - Intelligence Hub", layout="wide")
+try:
+    genai.configure(api_key=GEMINI_API_KEY)
+    # මෘදුකාංගයේ ආරක්ෂිත සැකසුම්
+    safety_settings = [
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    ]
+except Exception as e:
+    st.error("API Setup Error")
+
+# --- 2. SMART & PROFESSIONAL UI (CSS) ---
+st.set_page_config(page_title="DiNuX ai", layout="wide")
 
 st.markdown("""
     <style>
-    /* Global Styles */
-    .stApp { background-color: #0b0e14; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+    /* Dark Theme */
+    .stApp { background-color: #0d1117; color: #c9d1d9; }
     
-    /* Sidebar Styling */
+    /* Sidebar */
     section[data-testid="stSidebar"] {
-        background-color: #111827 !important;
-        border-right: 1px solid #1f2937;
-        width: 260px !important;
+        background-color: #161b22 !important;
+        border-right: 1px solid #30363d;
     }
 
     /* Glassmorphism Cards */
-    .card {
-        background: rgba(31, 41, 55, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 20px;
-        backdrop-filter: blur(10px);
+    .metric-card {
+        background: #21262d;
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        margin-bottom: 15px;
     }
     
-    .status-active { color: #10b981; font-size: 12px; font-weight: bold; }
-    .status-training { color: #3b82f6; font-size: 12px; font-weight: bold; }
-
-    /* Custom Chat Input */
-    .stChatInputContainer {
-        background-color: #1f2937 !important;
-        border-radius: 12px !important;
-        border: 1px solid #374151 !important;
+    .status-dot {
+        height: 10px; width: 10px; border-radius: 50%;
+        display: inline-block; margin-right: 5px;
     }
 
-    /* Custom Button Style */
-    .stButton>button {
-        background: linear-gradient(90deg, #3b82f6, #2563eb);
-        color: white;
-        border-radius: 8px;
-        border: none;
-        width: 100%;
+    /* Shining Title */
+    .shining-title {
+        font-size: 40px; font-weight: 800;
+        background: linear-gradient(120deg, #58a6ff, #ffffff, #58a6ff);
+        background-size: 200% auto;
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        animation: shine 3s linear infinite;
     }
+    @keyframes shine { to { background-position: 200% center; } }
 
-    /* Hide Streamlit Branding */
+    /* Clean Chat */
+    .stChatMessage { border-radius: 15px; margin-bottom: 10px; }
+    
+    /* Hide default streamlit elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR NAVIGATION ---
+# --- 3. SIDEBAR (Navigation & Developer Info) ---
 with st.sidebar:
-    st.markdown("<h2 style='color:white;'>🧬 DiNuX <span style='color:#3b82f6;'>ai</span></h2>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size:12px; color:#9ca3af;'>Intelligence Hub</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:#58a6ff;'>🧬 DiNuX AI</h2>", unsafe_allow_html=True)
+    st.caption("Intelligence Hub v2.5")
     st.write("---")
-    st.button("🏠 Dashboard")
-    st.button("📂 Projects")
-    st.button("🤖 AI Models")
-    st.button("📊 Analytics")
-    st.button("⚙️ Settings")
+    
+    # Model Selection
+    selected_model = st.selectbox("Choose Brain", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    
     st.write("---")
-    st.caption("Admin: Dinush Dilhara")
-
-# --- 4. MAIN LAYOUT (Three Columns like Image) ---
-col1, col2, col3 = st.columns([1.2, 2, 1], gap="medium")
-
-# --- COLUMN 1: PROJECT OVERVIEW ---
-with col1:
-    st.markdown("### Project Overview")
-    
-    # Card 1
-    with st.container():
-        st.markdown("""
-        <div class="card">
-            <p style='margin:0; font-weight:bold;'>Insight Engine v7</p>
-            <span class="status-active">● Active</span>
-            <h2 style='text-align:center; color:#10b981;'>80%</h2>
-            <p style='font-size:11px; text-align:center; color:#9ca3af;'>Accuracy 55%</p>
-        </div>
-        """, unsafe_allow_html=True)
-        st.button("Open Chat", key="btn1")
-
-    # Card 2
-    with st.container():
-        st.markdown("""
-        <div class="card">
-            <p style='margin:0; font-weight:bold;'>NLP Sentiment Bot</p>
-            <span class="status-training">● Training</span>
-            <h2 style='text-align:center; color:#3b82f6;'>90%</h2>
-            <p style='font-size:11px; text-align:center; color:#9ca3af;'>Accuracy 95%</p>
-        </div>
-        """, unsafe_allow_html=True)
-        st.button("Settings", key="btn2")
-
-# --- COLUMN 2: LIVE COLLABORATION & CHAT ---
-with col2:
-    st.markdown("### Live Collaboration & Chat")
-    
-    chat_container = st.container(height=500, border=True)
-    with chat_container:
-        st.chat_message("user").write("How do we generate AI Insight Engine for DiNuX AI?")
-        st.chat_message("assistant").write("Here is the architectural overview for the DiNuX Insight Engine. You can retrain the model using the provided data studio link.")
-        st.code("""def predict(data):
-    return model.predict(data)""", language="python")
-
-    prompt = st.chat_input("Command DiNuX... or select a suggested action")
-
-# --- COLUMN 3: METRICS & HISTORY ---
-with col3:
-    st.markdown("### Active Model Metrics")
-    
-    # Mini Chart using Plotly
-    fig = go.Figure(go.Scatter(y=[10, 45, 30, 80, 95], mode='lines', line=dict(color='#3b82f6', width=3)))
-    fig.update_layout(margin=dict(l=0,r=0,t=0,b=0), height=150, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False)
-    fig.update_xaxes(visible=False)
-    fig.update_yaxes(visible=False)
-    st.plotly_chart(fig, use_container_width=True)
-
+    st.markdown("### 👤 Developer")
     st.markdown("""
-    <div class="card">
-        <p style='font-size:13px; font-weight:bold;'>Chat History</p>
-        <p style='font-size:12px; color:#9ca3af;'>● Session list 1</p>
-        <p style='font-size:12px; color:#3b82f6;'>● Session list 2 (Active)</p>
-        <p style='font-size:12px; color:#9ca3af;'>● Session list 3</p>
+    **Dinush Dilhara** *Lead Developer* KDD STUDIO
+    """)
+    
+    if st.button("🗑️ Clear Chat"):
+        st.session_state.messages = []
+        st.rerun()
+
+# --- 4. MAIN LAYOUT (Two Columns) ---
+col_main, col_stats = st.columns([3, 1], gap="large")
+
+with col_main:
+    st.markdown('<h1 class="shining-title">DiNuX AI</h1>', unsafe_allow_html=True)
+    st.markdown("<p style='color:#8b949e;'>Next-gen AI assistant for smart collaborations.</p>", unsafe_allow_html=True)
+    
+    # Chat History
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    chat_area = st.container(height=500)
+    for message in st.session_state.messages:
+        with chat_area.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Input Logic
+    prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
+
+with col_stats:
+    st.markdown("### Metrics")
+    
+    # Model Status Card
+    st.markdown(f"""
+    <div class="metric-card">
+        <p style='color:#8b949e; font-size:12px; margin:0;'>Active Model</p>
+        <h4 style='margin:0; color:#58a6ff;'>{selected_model}</h4>
+        <div style='margin-top:10px;'>
+            <span class="status-dot" style="background-color: #238636;"></span>
+            <span style="font-size:12px; color:#3fb950;">System Online</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
+    # Usage Card
     st.markdown("""
-    <div class="card" style='background: linear-gradient(135deg, #1e3a8a, #1e293b);'>
-        <p style='font-size:12px;'><b>Usage Metrics</b></p>
-        <p style='font-size:10px;'>CPU: 45% | GPU: 88%</p>
+    <div class="metric-card">
+        <p style='color:#8b949e; font-size:12px; margin:0;'>Resources</p>
+        <p style='font-size:14px; margin:5px 0;'>CPU: <span style='color:#f85149;'>45%</span></p>
+        <p style='font-size:14px; margin:5px 0;'>GPU: <span style='color:#58a6ff;'>88%</span></p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Quick Upload (Professional Style)
+    uploaded_file = st.file_uploader("Analyze Image", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
+    if uploaded_file:
+        st.success("Image Loaded!")
 
-# --- 5. CHAT LOGIC ---
+# --- 5. SMART AI RESPONSE LOGIC ---
 if prompt:
-    with col2:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
-        st.chat_message("assistant").write(response.text)
+    # Display user message
+    with chat_area.chat_message("user"):
+        st.markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    # AI Response
+    with chat_area.chat_message("assistant"):
+        response_placeholder = st.empty()
+        full_response = ""
+        
+        try:
+            # Fixing the "NotFound" Error by correctly initializing the model
+            model = genai.GenerativeModel(model_name=selected_model)
+            
+            # Content input (Text + Image if available)
+            inputs = [f"You are DiNuX AI by Dinush Dilhara. Speak in friendly Sinhala. User query: {prompt}"]
+            if uploaded_file:
+                inputs.append(Image.open(uploaded_file))
+
+            # Streaming response for a "Smart" feel
+            response = model.generate_content(inputs, stream=True)
+            for chunk in response:
+                if chunk.text:
+                    full_response += chunk.text
+                    response_placeholder.markdown(full_response + "▌")
+            
+            response_placeholder.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+        except Exception as e:
+            st.error("සමාවෙන්න, මොහොතකට බාධාවක් වුණා. කරුණාකර නැවත උත්සාහ කරන්න.")
+            print(f"Error Log: {e}")
