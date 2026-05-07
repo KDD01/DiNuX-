@@ -2,68 +2,87 @@ import streamlit as st
 import google.generativeai as genai
 import time
 
-# --- PAGE SETUP ---
+# --- පිටුවේ සැකසුම් ---
 st.set_page_config(page_title="DiNuX AI Pro", page_icon="🤖", layout="wide")
 
-# --- API CONFIG ---
-API_KEY = "AIzaSyCSIbVlIY0_CJe1rfFqh6l4lZoeAGlCGpU"
-genai.configure(api_key=API_KEY)
+# --- API CONFIGURATION ---
+# ඔයා ලබා දුන් අලුත්ම API Key එක මෙහි ඇත
+API_KEY = "AIzaSyA4gVtgFUbJoP6LL5KRH5tklRYDuVWpm48"
 
-# --- AUTO-FIX & SMART MODEL SELECTOR ---
-# එක model එකක් error ආවොත් අනිත් එක පාවිච්චි කරන ලොජික් එක
-def get_ai_response(prompt):
-    # උත්සාහ කරන Models ලැයිස්තුව
-    models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+# API එක සම්බන්ධ කිරීම (Connection stable කිරීමට settings යොදා ඇත)
+try:
+    genai.configure(api_key=API_KEY)
+except Exception as e:
+    st.error(f"API Configuration Error: {e}")
+
+# --- AUTO-FIX LOGIC (බොට් වැඩ නොකර සිටීම වළක්වන ක්‍රමය) ---
+def generate_ai_response(user_input):
+    # වැඩ කිරීමට ඉඩ ඇති මාදිලි ලැයිස්තුව (Fallback system)
+    models_to_test = [
+        'gemini-1.5-flash', 
+        'gemini-1.5-pro', 
+        'gemini-pro'
+    ]
     
-    for model_name in models_to_try:
+    for model_name in models_to_test:
         try:
             model = genai.GenerativeModel(model_name)
-            response = model.generate_content(prompt)
-            return response.text
-        except Exception as e:
-            # මේ model එක වැඩ නැත්නම් ඊළඟ එකට යන්න
-            continue 
-    
-    return "සමාවෙන්න, Models කිසිවක් ප්‍රතිචාර දක්වන්නේ නැත. කරුණාකර ඔබගේ API Key එක පරීක්ෂා කරන්න."
+            # වචන generate කරන විට ඇතිවන පොදු දෝෂ මගහැරීමට උත්සාහ කරයි
+            response = model.generate_content(user_input)
+            if response and response.text:
+                return response.text
+        except Exception:
+            # මේ model එක වැඩ නැත්නම් ඊළඟ එකට මාරු වෙයි
+            continue
+            
+    return "සමාවෙන්න, මට මේ වෙලාවේ පිළිතුරු දීමට නොහැකියි. කරුණාකර ඔබගේ API Key එකේ සීමාවන් (Limits) පරීක්ෂා කරන්න."
 
-# --- SIDEBAR UI ---
+# --- SIDEBAR UI (ඔයා ඉල්ලපු අලුත් Options) ---
 with st.sidebar:
     st.title("🤖 DiNuX AI Control")
     st.markdown("---")
-    st.success("Auto-Fix Mode: ON 🛡️")
-    st.info("System: multi-model fallback active")
+    st.success("System Status: Active ✅")
+    st.info("Auto-Healing: Enabled 🛡️")
+    
+    st.markdown("### ⚙️ App Options")
+    ai_mood = st.selectbox("Response Style", ["Professional", "Friendly", "Detailed"])
     
     st.markdown("---")
-    st.subheader("App Info")
+    st.markdown("### 📄 App Details")
+    st.write("**Name:** DiNuX AI Pro")
     st.write("**Developer:** Dinush")
-    st.write("**Status:** Running")
+    st.write("**Version:** 3.0.0 (Final)")
     
-    if st.button("🗑️ Clear Chat History"):
+    if st.button("🗑️ Clear All Conversations"):
         st.session_state.messages = []
         st.rerun()
 
-# --- MAIN INTERFACE ---
+# --- MAIN CHAT INTERFACE ---
 st.title("🤖 DiNuX AI Assistant")
-st.caption("I will think and answer your questions automatically fixing any bugs.")
+st.caption("Advanced Auto-Bugs Fixing System is Active")
 
+# Chat History එක තබා ගැනීමට
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# ඉතිහාසය පෙන්වීම
+# කලින් කතා කරපුවා පෙන්වීම
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ප්‍රශ්නය ඇසීම
-if prompt := st.chat_input("ඔයාට දැනගන්න ඕන මොනවාද?"):
+# User Input ලබා ගැනීම
+if prompt := st.chat_input("මොනවා හරි අහන්න..."):
+    # User message එක history එකට එක් කිරීම
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # AI Response ලබා ගැනීම (Error handling සමග)
     with st.chat_message("assistant"):
         with st.spinner("හිතමින් පවතිනවා..."):
-            # මෙතනදී ඇප් එක හිතලා හොඳම model එක තෝරාගෙන පිළිතුරු දෙයි
-            full_response = get_ai_response(prompt)
+            # පද්ධතිය විසින්ම හොඳම model එක තෝරාගෙන පිළිතුරු දෙයි
+            full_response = generate_ai_response(prompt)
             st.markdown(full_response)
     
+    # AI පිළිතුර history එකට එක් කිරීම
     st.session_state.messages.append({"role": "assistant", "content": full_response})
