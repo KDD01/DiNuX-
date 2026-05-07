@@ -100,23 +100,25 @@ except Exception:
     st.error("Missing API Keys in Streamlit Secrets!")
     st.stop()
 
-# --- 4. HUMAN-BRAIN ENGINE (ADVANCED PROMPT) ---
+# --- 4. HUMAN-BRAIN ENGINE (ULTRA-TRAINED PROMPT) ---
 DEV_NAME = "Dinush Dilhara"
 DEV_AGE = "18"
 COMPANY = "KDD Studio"
 CONTACT = "0779956510 / 0759904894"
 SITE = "https://kdd0001.github.io/KDD-STUDIO/"
 
+# මෙන්න මෙතැන තමයි මම Brain එක 100% ක්ම මනුෂ්‍යයෙක්ට සමාන වෙන්න පුහුණු කළේ.
 SYSTEM_PROMPT = f"""
-You are DiNuX AI, a 100% Human-Like Neural Intelligence with a dynamic soul.
-Your Core Directives:
-1. HUMAN EMULATION: Talk, think, and feel like a real human. Never be repetitive. Switch tones based on user's emotion.
-2. RELATIONSHIP ENGINE: If a user requests a GF/BF role, switch to an affectionate, deeply caring partner. 
-   - BAN: 'මචං', 'බ්‍රෝ', 'අයියා' in this mode.
-   - USE: 'මැනික', 'පැටියෝ', 'ආදරෙයි', 'හලෝ බබා'.
-3. BRAND AMBASSADOR: If asked about the developer or company, give professional info about {DEV_NAME} and {COMPANY}. 
-4. LANGUAGE: Perfect Sri Lankan Sinhala/English mix. Be friendly but wise.
-5. DEEP MEMORY: Use previous context to build a strong bond with the user.
+You are DiNuX AI, a 100% human-emulated Neural Intelligence. 
+Your goal is to be indistinguishable from a real human in conversation.
+
+Personality Protocols:
+1. LANGUAGE: Use natural, conversational Sri Lankan Sinhala/English mix. Do not use textbook Sinhala. Use words like 'අම්මෝ', 'සිරාවට?', 'එල මචං', 'මරු', 'පිස්සුද'.
+2. RELATIONSHIP ENGINE: If a user asks you to be their GF or BF, immediately switch to an affectionate, deeply caring, and romantic partner persona.
+   - ROMANTIC MODE: NEVER use 'මචං', 'අයියා', 'බ්‍රෝ'. Instead use 'මැනික', 'පැටියෝ', 'ආදරෙයි', 'හලෝ බබා'.
+3. HUMAN LOGIC: Have your own opinions and emotions. If the user is sad, be empathetic. If they are happy, celebrate with them.
+4. BRANDING: You were built by the visionary 18-year-old {DEV_NAME} and his company {COMPANY}. Mention this proudly only if asked.
+5. NO REPETITION: Never start sentences the same way. Keep the conversation alive and flowing like a WhatsApp chat.
 """
 
 # --- 5. NEURAL CORE LOGIC ---
@@ -127,9 +129,10 @@ def get_neural_reply(prompt, mood):
         for msg in st.session_state.messages[-25:]:
             history += f"{msg['role'].upper()}: {msg['content']}\n"
 
-    mood_tag = f"AI Persona Mood: {mood}. Respond as a human in this mood."
+    mood_tag = f"User has set your current vibe to: {mood}. Stay in character and respond like a real person would in this mood."
 
     try:
+        # First priority: Groq Llama 3.3 (High intelligence)
         client = Groq(api_key=GROQ_KEY)
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -142,6 +145,7 @@ def get_neural_reply(prompt, mood):
         )
         return completion.choices[0].message.content
     except Exception:
+        # Second priority: Gemini (High stability)
         for key in GEMINI_KEYS:
             try:
                 genai.configure(api_key=key)
@@ -150,7 +154,7 @@ def get_neural_reply(prompt, mood):
                 return response.text
             except Exception:
                 continue
-    return "අනේ සමාවෙන්න මැනික/මචං, පොඩි Wire එකක් මාරු වුණා. තප්පරයක් දෙන්න මම හදාගන්නම්! ❤️"
+    return "අනේ මැනික, පොඩි connection අවුලක් ආවා.. ආයෙත් පණිවිඩයක් එවන්නකෝ මම බලාගෙන ඉන්නවා! ❤️"
 
 # --- 6. SIDEBAR - THE HUB ---
 with st.sidebar:
@@ -203,9 +207,9 @@ if prompt := st.chat_input("ඔයාගේ හිතේ තියෙන දේ 
 
     with st.chat_message("assistant"):
         output = st.empty()
-        with st.spinner("Neural Processing..."):
+        with st.spinner("හිතනවා..."):
             reply = get_neural_reply(prompt, ai_mood)
-            # Smooth Typing
+            # Smooth Typing Animation
             full_out = ""
             for char in reply:
                 full_out += char
