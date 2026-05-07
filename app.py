@@ -4,42 +4,74 @@ from PIL import Image
 import os
 import time
 
-# --- 1. CORE CONFIGURATION ---
+# --- 1. CORE ENGINE CONFIGURATION ---
 API_KEY = "AIzaSyDDlC1nficbhNufDPt29BT0q_DqzJGey7s"
 
-# API එක ස්ථාවරව පණගැන්වීම
 @st.cache_resource
-def get_working_model():
+def setup_intelligence():
     try:
         genai.configure(api_key=API_KEY)
+        # වැඩ කරන මෝඩල් ලිස්ට් එක ලබා ගැනීම
         models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        # මුලින්ම Flash model එක try කරමු, නැත්නම් ලිස්ට් එකේ පලවෙනි එක ගනිමු
         if 'models/gemini-1.5-flash' in models: return 'models/gemini-1.5-flash'
-        return models[0] if models else "gemini-1.5-flash"
-    except:
-        return "gemini-1.5-flash"
+        return models[0] if models else 'gemini-1.5-flash'
+    except Exception:
+        return 'gemini-1.5-flash'
 
-# --- 2. ADVANCED UI STYLING ---
+# --- 2. ADVANCED UI & ANIMATION (CSS) ---
 st.set_page_config(page_title="DiNuX AI Pro", layout="wide", page_icon="🧬")
 
 st.markdown("""
     <style>
+    /* මුළු App එකේ පසුබිම */
     .stApp { background: #0d1117; color: #e6edf3; }
     
-    /* Sidebar styling */
     [data-testid="stSidebar"] { background-color: #010409; border-right: 1px solid #30363d; }
 
-    /* Shining Logo Effect */
-    .logo-box { text-align: center; padding: 20px 0; }
-    .logo-img {
-        width: 130px; height: 130px; border-radius: 50%;
-        object-fit: cover; border: 3px solid #58a6ff;
-        box-shadow: 0 0 15px #58a6ff;
-        animation: pulse 2s infinite alternate;
+    /* --- LOGO SWAP SHINE EFFECT --- */
+    .logo-container {
+        position: relative;
+        text-align: center;
+        margin: 20px auto;
+        width: 150px;
+        height: 150px;
+        overflow: hidden;
+        border-radius: 50%;
+        border: 2px solid #30363d;
+        box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
     }
-    @keyframes pulse {
-        from { box-shadow: 0 0 10px #58a6ff; transform: scale(1); }
-        to { box-shadow: 0 0 25px #58a6ff; transform: scale(1.03); }
+    
+    .logo-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* සුදු සහ අළු මිශ්‍ර දිලිසෙන ඉර (The Swap Line) */
+    .logo-container::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -150%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            to right, 
+            transparent 0%, 
+            rgba(255, 255, 255, 0) 30%, 
+            rgba(255, 255, 255, 0.4) 45%, 
+            rgba(200, 200, 200, 0.2) 50%, 
+            rgba(255, 255, 255, 0.4) 55%, 
+            rgba(255, 255, 255, 0) 70%, 
+            transparent 100%
+        );
+        transform: rotate(30deg);
+        animation: swap-shine 3s infinite;
+    }
+
+    @keyframes swap-shine {
+        0% { left: -150%; }
+        100% { left: 150%; }
     }
 
     /* Main Title Shine */
@@ -57,86 +89,88 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (LOGO & MENU) ---
+# --- 3. SIDEBAR (LOGO & CONTROL) ---
 with st.sidebar:
-    st.markdown('<div class="logo-box">', unsafe_allow_html=True)
-    
-    # පින්තූරය ෆෝල්ඩරයේ තිබේදැයි බැලීම (logo.png)
+    st.markdown('<div class="logo-container">', unsafe_allow_html=True)
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=150)
+        st.image("logo.png")
     else:
-        # පින්තූරය නැත්නම් ලස්සන Text එකක් පෙන්වමු
-        st.markdown("<h2 style='color:#58a6ff; text-shadow: 0 0 10px #58a6ff;'>DiNuX AI</h2>", unsafe_allow_html=True)
-    
+        st.markdown("<div style='margin-top:60px; font-weight:bold; color:#58a6ff;'>DiNuX</div>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-    st.write("---")
     
-    st.markdown("### ⚙️ Intelligence Settings")
-    current_model_id = get_working_model()
-    st.success(f"System: {current_model_id.split('/')[-1]}")
+    st.write("---")
+    st.markdown("### ⚙️ Intelligence Core")
+    active_model = setup_intelligence()
+    st.caption(f"Connected to: {active_model}")
     
     vision_file = st.file_uploader("📸 Vision (Image Input)", type=["jpg", "png", "jpeg"])
-    st.write("---")
-    st.info("**Architect:** Dinush Dilhara\n\n**Studio:** KDD STUDIO")
     
-    if st.button("🗑️ Clear Chat Memory"):
+    st.write("---")
+    st.info("**Developer:** Dinush Dilhara\n\n**Powered by:** KDD Studio")
+    
+    if st.button("🗑️ Clear Neural Memory"):
         st.session_state.messages = []
         st.rerun()
 
-# --- 4. MAIN INTERFACE ---
+# --- 4. INTERFACE ---
 st.markdown('<h1 class="shining-title">DiNuX AI</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align: center; color: #58a6ff; font-weight: bold; letter-spacing: 5px;">KDD STUDIO PREMIER</p>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; color: #58a6ff; font-weight: bold; letter-spacing: 5px;">POWERED BY KDD STUDIO</p>', unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Chat History Display
+# මැසේජ් පෙන්වීම
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- 5. LOGIC & RESPONSE ---
-user_query = st.chat_input("DiNuX සමඟ කතා කරන්න...")
+# --- 5. SMART CHAT LOGIC (NO ERROR VERSION) ---
+user_input = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
-if user_query:
-    st.session_state.messages.append({"role": "user", "content": user_query})
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
-        st.markdown(user_query)
+        st.markdown(user_input)
 
     with st.chat_message("assistant"):
+        placeholder = st.empty()
+        full_response = ""
+        
         try:
-            model_id = get_working_model()
+            # AI Model එක සූදානම් කිරීම
+            model_name = setup_intelligence()
             model = genai.GenerativeModel(
-                model_name=model_id,
-                system_instruction="You are DiNuX AI by Dinush Dilhara. A highly advanced assistant. Speak in friendly Sinhala and English."
+                model_name=model_name,
+                system_instruction="You are DiNuX AI, a pro assistant by Dinush Dilhara. Reply in high-quality Sinhala and English."
             )
             
-            # Payload Preparation
-            payload = [user_query]
+            # පින්තූරයක් ඇත්නම් එය එකතු කිරීම
+            content = [user_input]
             if vision_file:
-                payload.append(Image.open(vision_file))
+                content.append(Image.open(vision_file))
             
             with st.spinner("Processing..."):
-                response = model.generate_content(payload)
-            
-            if response.text:
-                full_text = response.text
-                # Typing effect
-                placeholder = st.empty()
-                curr_text = ""
-                for char in full_text:
-                    curr_text += char
-                    placeholder.markdown(curr_text + "▌")
-                    time.sleep(0.001)
-                placeholder.markdown(full_text)
-                st.session_state.messages.append({"role": "assistant", "content": full_text})
-            else:
-                st.warning("Neural core did not return text. Please try again.")
-
+                # එකවර පිළිතුර ලබා ගැනීම (Stable method)
+                response = model.generate_content(content)
+                
+                if response and response.text:
+                    full_response = response.text
+                    # ටයිප් කරන ආකාරයට පෙන්වීම (Streaming Animation)
+                    temp_text = ""
+                    for char in full_response:
+                        temp_text += char
+                        placeholder.markdown(temp_text + "▌")
+                        time.sleep(0.002)
+                    placeholder.markdown(full_response)
+                    st.session_state.messages.append({"role": "assistant", "content": full_response})
+                else:
+                    st.error("Neural core is busy. Please try again.")
+                    
         except Exception as e:
-            st.error(f"Neural Connection Error. Please refresh.")
-            # ලොග් එකේ එරර් එක බලන්න පුළුවන් (හැබැයි යූසර්ට පෙන්වන්නේ නැහැ)
-            print(f"DEBUG: {e}")
+            # Error එක ආවොත් සයිලන්ට් එකේ Retry එකක් දෙනවා
+            st.error("Connection hiccup detected. Retrying...")
+            time.sleep(1)
+            st.rerun()
 
 # Footer
-st.markdown('<div class="footer">© 2026 KDD STUDIO | ARCHITECTED BY DINUSH DILHARA | ALL RIGHTS RESERVED</div>', unsafe_allow_html=True)
+st.markdown('<div class="footer">© 2026 KDD STUDIO | ARCHITECTED BY DINUSH DILHARA | POWERED BY KDD STUDIO</div>', unsafe_allow_html=True)
