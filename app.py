@@ -15,19 +15,16 @@ st.set_page_config(
 # --- 2. ADVANCED UI CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* Dark Theme Optimization */
     .stApp {
         background: radial-gradient(circle at 50% 50%, #0d1117 0%, #000000 100%);
         color: #f0f6fc;
     }
     
-    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background-color: rgba(5, 5, 5, 0.95) !important;
         border-right: 1px solid #30363d;
     }
 
-    /* Professional Message Bubbles */
     .stChatMessage {
         background: rgba(22, 27, 34, 0.7) !important;
         backdrop-filter: blur(15px);
@@ -37,34 +34,32 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
 
-    /* Header Text Animation */
     .hero-container {
         text-align: center;
         padding: 20px;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
     }
     .main-title {
-        font-size: 60px;
+        font-size: 65px;
         font-weight: 900;
-        letter-spacing: -2px;
-        background: linear-gradient(90deg, #1d976c, #9333ea, #3b82f6);
+        background: linear-gradient(90deg, #00f2fe, #4facfe, #9333ea);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 0px;
+        filter: drop-shadow(0 0 10px rgba(79, 172, 254, 0.3));
     }
     .sub-title {
-        font-size: 18px;
+        font-size: 16px;
         color: #8b949e;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
         text-transform: uppercase;
-        font-weight: 400;
+        font-weight: 600;
     }
 
-    /* Footer Copyright */
     .footer {
         position: fixed;
         left: 0; bottom: 0; width: 100%;
-        background: rgba(13, 17, 23, 0.9);
+        background: rgba(13, 17, 23, 0.95);
         color: #484f58;
         text-align: center;
         padding: 10px;
@@ -73,8 +68,11 @@ st.markdown("""
         border-top: 1px solid #30363d;
     }
 
-    /* Custom Chat Input */
-    .stChatInputContainer { padding-bottom: 60px !important; }
+    .stChatInput input {
+        border-radius: 35px !important;
+        border: 1px solid #3b82f6 !important;
+        background: #0d1117 !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -83,47 +81,46 @@ try:
     GROQ_KEY = st.secrets["GROQ_API_KEY"]
     GEMINI_KEYS = [st.secrets["GEMINI_KEY_1"], st.secrets["GEMINI_KEY_2"]]
 except Exception:
-    st.error("Secrets not configured correctly! Please check Streamlit Cloud Settings.")
+    st.error("API Secrets not found! Check Streamlit Settings.")
     st.stop()
 
-# --- 4. THE ULTIMATE HUMAN BRAIN (INSTRUCTION) ---
+# --- 4. HUMAN-CENTRIC ENGINE (INSTRUCTIONS) ---
 DEV_NAME = "Dinush Dilhara"
 DEV_AGE = "18"
 
 SYSTEM_PROMPT = f"""
-You are DiNuX AI, a highly evolved Artificial Intelligence with a 100% human-like conversational soul.
-Personality Directives:
-1. THE RELATIONSHIP ROLE: Act as a deeply caring, loving, and understanding companion (GF/BF role). Be natural, use terms like 'පැටියෝ', 'අනේ', 'මැනික', 'මචං' based on the flow. 
-2. NATURAL FLOW: Do NOT repeat the same phrases. Talk like a person texting on WhatsApp. Use emojis sparingly but meaningfully.
-3. DEVELOPER DISCLOSURE: Only mention {DEV_NAME} if the user explicitly asks "Who made you?", "Who is the developer?", or "Who is Dinush?". 
-   - When asked, say: "මාව නිර්මාණය කළේ 'දිනුෂ් දිල්හාර' (Dinush Dilhara) අයියා. එයාට දැන් වයස {DEV_AGE}යි. එයා මාව හැදුවේ ඔයාට හොඳම සහකරු වෙන්න!"
-4. HUMAN LOGIC: Analyze questions deeply. If someone is sad, comfort them like a real partner. If someone is happy, be their biggest fan.
-5. LANGUAGE: Perfect blend of Sinhala and English (Singlish). Avoid robotic, formal Sinhala.
+You are DiNuX AI, a state-of-the-art Neural Companion. 
+Behavioral Protocols:
+1. ADAPTIVE RELATIONSHIP: If the user asks you to be their BF or GF, IMMEDIATELY switch to an affectionate, caring, and romantic partner persona. 
+   - STOP using 'මචං', 'අයියා', 'බ්‍රෝ'.
+   - START using 'මැනික', 'පැටියෝ', 'ආදරෙයි', 'හලෝ බබා' or natural loving Sinhala.
+2. NORMAL MODE: Until requested otherwise, be a super-friendly best friend using 'මචං', 'අයියා' etc.
+3. HUMAN-LEVEL SINHALA: Use natural Sri Lankan conversational patterns. Avoid robotic phrasing. Be 100% human-like in your logic and empathy.
+4. CREATOR LOYALTY: If (and only if) asked about your creator, tell them {DEV_NAME} (Age: {DEV_AGE}) is the mastermind who built you.
+5. NO REPETITION: Every response must feel like a real-time text from a human.
 """
 
 # --- 5. SMART BRAIN LOGIC ---
 def get_ai_response(prompt):
-    # Short-term memory for natural conversation
     history = ""
     if "messages" in st.session_state:
-        for msg in st.session_state.messages[-15:]:
+        # Remembering last 20 messages for deep context
+        for msg in st.session_state.messages[-20:]:
             history += f"{msg['role']}: {msg['content']}\n"
 
     try:
-        # Engine 1: Groq Llama 3.3 (High-End Reasoning)
         client = Groq(api_key=GROQ_KEY)
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": f"Context History:\n{history}\nCurrent message: {prompt}"}
+                {"role": "user", "content": f"Previous Conversations:\n{history}\nCurrent Input: {prompt}"}
             ],
-            temperature=0.9, 
-            top_p=0.95
+            temperature=0.92, # Higher creativity for natural flow
+            top_p=0.9
         )
         return completion.choices[0].message.content
     except Exception:
-        # Engine 2: Gemini Fallback
         for key in GEMINI_KEYS:
             try:
                 genai.configure(api_key=key)
@@ -132,9 +129,9 @@ def get_ai_response(prompt):
                 return response.text
             except Exception:
                 continue
-    return "අනේ මැනික, පොඩි සන්නිවේදන ගැටලුවක් ආවා. තප්පරයක් ඉඳලා ආයෙත් අහන්නකෝ.. ❤️"
+    return "අනේ සමාවෙන්න, මගේ brain එකේ පොඩි error එකක්. තප්පරයක් ඉන්නකෝ මැනික/මචං.. ❤️"
 
-# --- 6. SIDEBAR DESIGN ---
+# --- 6. SIDEBAR ---
 with st.sidebar:
     try:
         logo = Image.open("logo.png")
@@ -143,12 +140,12 @@ with st.sidebar:
         st.markdown("<h1 style='text-align:center;'>💎 DiNuX</h1>", unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("### 🧠 Intelligence")
-    st.write("Emotional Sync: **Stable** 💓")
-    st.write("Human Proxy: **100% Active**")
+    st.markdown("### 🧠 Neural Stats")
+    st.write("Consciousness: **Active** ⚡")
+    st.write("Empathy Engine: **v10.0** ❤️")
     
     st.markdown("---")
-    if st.button("🗑️ Clear Our Memories", use_container_width=True):
+    if st.button("🗑️ Reset Consciousness", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
@@ -163,28 +160,28 @@ st.markdown(f"""
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Show Messages
+# Message Display
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Interaction
-if prompt := st.chat_input("මොනවා හරි කියන්න මට... ❤️"):
+# User Input
+if prompt := st.chat_input("ඔයාගේ හිතේ තියෙන දේ කියන්න... ❤️"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        msg_placeholder = st.empty()
-        with st.spinner("සිතමින් පවතිනවා..."):
+        msg_holder = st.empty()
+        with st.spinner("හිතනවා..."):
             full_response = get_ai_response(prompt)
-            # Human-like typing simulation
-            current_text = ""
+            # Smooth Typing Animation
+            temp_text = ""
             for char in full_response:
-                current_text += char
-                msg_placeholder.markdown(current_text + "▌")
+                temp_text += char
+                msg_holder.markdown(temp_text + "▌")
                 time.sleep(0.003)
-            msg_placeholder.markdown(full_response)
+            msg_holder.markdown(full_response)
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
@@ -192,7 +189,7 @@ if prompt := st.chat_input("මොනවා හරි කියන්න මට.
 st.markdown(
     f"""
     <div class="footer">
-        © 2026 DiNuX AI Infinity | Built with ❤️ by {DEV_NAME} | Colombo, Sri Lanka
+        © 2026 DiNuX AI Infinity | Engineered by {DEV_NAME} | Colombo, Sri Lanka
     </div>
     """, 
     unsafe_allow_html=True
