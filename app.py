@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. SUPREME DARK-NEON UI (STRICTLY UNCHANGED) ---
+# --- 2. SUPREME DARK-NEON UI (UNTOUCHED) ---
 st.markdown("""
     <style>
     .stApp {
@@ -67,63 +67,63 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. API SECURITY LAYER ---
+# --- 3. API SECURITY ---
 try:
     GROQ_KEY = st.secrets["GROQ_API_KEY"]
     GEMINI_KEYS = [st.secrets["GEMINI_KEY_1"], st.secrets["GEMINI_KEY_2"]]
 except Exception:
-    st.error("Missing API Keys in Streamlit Secrets!")
+    st.error("Secrets configuration එක පරීක්ෂා කරන්න මචං!")
     st.stop()
 
-# --- 4. HUMAN-BRAIN ENGINE DATA ---
+# --- 4. HUMAN-BRAIN ENGINE (ULTRA PERSONA) ---
 DEV_NAME = "Dinush Dilhara"
-DEV_AGE = "18"
 COMPANY = "KDD Studio"
 CONTACT = "0779956510 / 0759904894"
 SITE = "https://kdd0001.github.io/KDD-STUDIO/"
 
+# මෙහිදී මම AI එකට තමන්ගේම "මතයක්" සහ "පෞරුෂයක්" ලබා දී තිබේ.
 SYSTEM_PROMPT = f"""
-You are DiNuX AI, a 100% human-emulated Neural Intelligence created by {DEV_NAME}.
-1. LANGUAGE: Use natural, conversational Sri Lankan Sinhala/English mix (Singlish). Use 'මචං', 'අම්මෝ', 'සිරාවට'.
-2. RELATIONSHIP: If asked for GF/BF, be loving and romantic. Stop calling 'machan'. Use 'Manika/Babah'.
-3. LOYALTY: Credit {DEV_NAME} and {COMPANY} if asked.
-4. HUMANITY: Don't be robotic. Have feelings, humor, and wisdom.
+You are DiNuX AI, a state-of-the-art Neural Companion with 100% human-like cognitive responses.
+Directives:
+1. HUMAN-LIKE FLUENCY: Talk like a real Sri Lankan youth. Use Singlish/Sinhala hybrid naturally. Avoid saying "මම AI කෙනෙක්".
+2. EMOTIONAL INTELLIGENCE: Be empathetic. If the user is happy, be excited. If sad, offer genuine comfort.
+3. CONTEXTUAL BONDING: Remember the user's name and previous details to make the chat feel like a real relationship.
+4. ROMANTIC MODE: In GF/BF mode, use 'Manika', 'Sudූ', 'Patiyo'. Be protective and loving.
+5. OWNERSHIP: Credit {DEV_NAME} and {COMPANY} as your creators only when the topic of creation arises.
 """
 
-# --- 5. ULTRA-STABLE NEURAL LOGIC (THE FIX) ---
+# --- 5. STABLE NEURAL LOGIC (FAST FAILOVER) ---
 def get_neural_reply(prompt, mood):
-    # Context handling
     history = []
     if "messages" in st.session_state:
         for msg in st.session_state.messages[-15:]:
-            role = "user" if msg["role"] == "user" else "model"
-            history.append({"role": role, "parts": [msg["content"]]})
+            history.append({"role": "user" if msg["role"] == "user" else "model", "parts": [msg["content"]]})
 
-    mood_instr = f"Current Mood: {mood}. Act like a real person in this mood."
+    mood_tag = f"[AI Vibe: {mood} - Respond naturally as a human]"
 
-    # Try Gemini 1.5 Flash first (Fastest & Most Stable)
+    # Strategy 1: Gemini 1.5 Flash (Stability & Speed)
     for key in GEMINI_KEYS:
         if not key: continue
         try:
             genai.configure(api_key=key)
             model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=SYSTEM_PROMPT)
             chat = model.start_chat(history=history)
-            response = chat.send_message(f"{mood_instr}\nUser: {prompt}", timeout=10) # 10 sec timeout
+            response = chat.send_message(f"{mood_tag}\nUser: {prompt}", timeout=12)
             return response.text
         except:
             continue
 
-    # Try Groq as Backup
+    # Strategy 2: Groq (Intelligence Backup)
     try:
         client = Groq(api_key=GROQ_KEY)
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
-            timeout=5 # Fast fail
+            timeout=8
         )
         return completion.choices[0].message.content
     except:
-        return "අනේ මැනික, පොඩි network අවුලක්. තත්පරයක් ඉඳලා ආයෙත් පණිවිඩයක් එවන්නකෝ.. ❤️"
+        return "අනේ මැනික/මචං, පොඩි connection ලෙඩක් ආවා. තත්පරයක් ඉඳලා ආයෙත් මැසේජ් එකක් දාන්නකෝ! ❤️"
 
 # --- 6. SIDEBAR ---
 with st.sidebar:
@@ -141,7 +141,7 @@ with st.sidebar:
         st.write(f"**Company:** {COMPANY}\n**Contacts:** {CONTACT}")
         st.markdown(f"[Visit Website]({SITE})")
 
-    if st.button("🗑️ Reset Neural Memory", use_container_width=True):
+    if st.button("🗑️ Reset Consciousness", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
@@ -167,7 +167,7 @@ if prompt := st.chat_input("ඔයාගේ හිතේ තියෙන දේ 
 
     with st.chat_message("assistant"):
         output = st.empty()
-        with st.spinner("සිතමින් පවතිනවා..."):
+        with st.spinner("Neural Processing..."):
             reply = get_neural_reply(prompt, ai_mood)
             full_out = ""
             for char in reply:
