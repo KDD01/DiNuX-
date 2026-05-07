@@ -4,7 +4,8 @@ from PIL import Image
 import time
 
 # =========================================================
-# DiNuX AI PRO - FINAL STABLE VERSION
+# DiNuX AI - ULTRA STABLE FINAL VERSION
+# Sinhala + English Friendly
 # =========================================================
 
 # ---------------- API KEY ----------------
@@ -17,7 +18,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- CUSTOM CSS ----------------
+# ---------------- GEMINI CONFIG ----------------
+genai.configure(api_key=API_KEY)
+
+# ---------------- CSS ----------------
 st.markdown("""
 <style>
 
@@ -65,30 +69,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- GEMINI CONFIG ----------------
-genai.configure(api_key=API_KEY)
-
-# ---------------- SAFETY SETTINGS ----------------
-safety_settings = [
-    {
-        "category": "HARM_CATEGORY_HARASSMENT",
-        "threshold": "BLOCK_NONE"
-    },
-    {
-        "category": "HARM_CATEGORY_HATE_SPEECH",
-        "threshold": "BLOCK_NONE"
-    },
-    {
-        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        "threshold": "BLOCK_NONE"
-    },
-    {
-        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-        "threshold": "BLOCK_NONE"
-    }
-]
-
-# ---------------- LOAD MODEL ----------------
+# ---------------- MODEL LOADER ----------------
 @st.cache_resource
 def load_model():
 
@@ -146,7 +127,7 @@ for msg in st.session_state.messages:
 prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
 # =========================================================
-# MAIN AI SYSTEM
+# MAIN CHAT SYSTEM
 # =========================================================
 
 if prompt:
@@ -161,7 +142,7 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # ASSISTANT RESPONSE
+    # ASSISTANT MESSAGE
     with st.chat_message("assistant"):
 
         loading = st.empty()
@@ -171,20 +152,31 @@ if prompt:
 
             model = load_model()
 
-            # ---------------- PAYLOAD ----------------
-            payload = []
+            # ---------------- SYSTEM PROMPT ----------------
+            system_prompt = """
+You are DiNuX AI.
 
-            # ADD USER TEXT
-            payload.append(prompt)
+You are a smart, friendly and advanced AI assistant.
 
-            # ADD IMAGE IF EXISTS
+Rules:
+- Speak naturally in Sinhala and English.
+- Understand Sinhala written in English letters.
+- Give clear and intelligent answers.
+- Be friendly and modern.
+- Help users with coding, education, AI, chatting and creativity.
+"""
+
+            # ---------------- CREATE PAYLOAD ----------------
+            payload = [system_prompt, prompt]
+
+            # IMAGE SUPPORT
             if uploaded_image is not None:
 
                 image = Image.open(uploaded_image)
 
                 payload.append(image)
 
-            # ---------------- RETRY SYSTEM ----------------
+            # ---------------- GENERATE RESPONSE ----------------
             response = None
 
             for attempt in range(3):
@@ -195,49 +187,60 @@ if prompt:
                         payload,
 
                         generation_config={
-                            "temperature": 0.7,
+                            "temperature": 0.8,
                             "top_p": 1,
                             "top_k": 1,
                             "max_output_tokens": 2048
-                        },
-
-                        safety_settings=safety_settings
+                        }
                     )
 
-                    break
+                    # SUCCESS
+                    if response:
+                        break
 
                 except Exception:
 
                     time.sleep(2)
 
-            # ---------------- RESPONSE READER ----------------
             loading.empty()
 
+            # ---------------- SAFE RESPONSE READER ----------------
             answer = ""
 
-            try:
+            if response is not None:
 
-                # NORMAL TEXT
-                if hasattr(response, "text") and response.text:
+                # METHOD 1
+                try:
 
-                    answer = response.text
+                    if hasattr(response, "text"):
 
-                # ALTERNATIVE RESPONSE FORMAT
-                elif response.candidates:
+                        if response.text:
+                            answer = response.text
 
-                    for candidate in response.candidates:
+                except:
+                    pass
 
-                        if candidate.content.parts:
+                # METHOD 2
+                if answer == "":
 
-                            for part in candidate.content.parts:
+                    try:
 
-                                if hasattr(part, "text"):
+                        if hasattr(response, "candidates"):
 
-                                    answer += part.text
+                            for candidate in response.candidates:
 
-            except Exception as e:
+                                if hasattr(candidate, "content"):
 
-                answer = f"Response Error: {str(e)}"
+                                    if hasattr(candidate.content, "parts"):
+
+                                        for part in candidate.content.parts:
+
+                                            if hasattr(part, "text"):
+
+                                                answer += part.text
+
+                    except:
+                        pass
 
             # ---------------- FINAL OUTPUT ----------------
             if answer.strip() != "":
@@ -251,7 +254,17 @@ if prompt:
 
             else:
 
-                st.warning("⚠️ Empty response received. Please resend.")
+                st.error("""
+⚠️ AI server did not return a response.
+
+Possible Reasons:
+- Invalid API Key
+- Internet issue
+- Gemini API limit reached
+- Google server temporary issue
+
+Please try again.
+""")
 
         except Exception as e:
 
