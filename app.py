@@ -4,7 +4,7 @@ from groq import Groq
 import time
 from PIL import Image
 
-# --- 1. PAGE SETUP ---
+# --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="DiNuX AI Infinity Pro",
     page_icon="💎",
@@ -12,64 +12,72 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. PREMIUM DARK UI CSS ---
+# --- 2. THE ULTIMATE NEON DARK UI (CSS) ---
 st.markdown("""
     <style>
-    /* Dark Theme Core */
+    /* Global Styles */
     .stApp {
-        background: radial-gradient(circle at center, #0a0f1e 0%, #000000 100%);
-        color: #e5e7eb;
+        background: radial-gradient(circle at top left, #050505, #000000);
+        color: #f8fafc;
     }
 
-    /* Sidebar Glassmorphism */
+    /* Sidebar Glow */
     section[data-testid="stSidebar"] {
-        background-color: rgba(5, 5, 5, 0.95) !important;
-        border-right: 1px solid #1f2937;
+        background-color: #050505 !important;
+        border-right: 1px solid #1e293b;
     }
 
-    /* Smart Chat Bubbles */
+    /* Message Bubbles with Subtle Animation */
     .stChatMessage {
-        background: rgba(17, 24, 39, 0.7) !important;
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 20px !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(56, 189, 248, 0.1) !important;
+        border-radius: 24px !important;
+        padding: 20px !important;
         margin-bottom: 20px !important;
-        padding: 18px !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .stChatMessage:hover {
+        border: 1px solid rgba(56, 189, 248, 0.3) !important;
+        transform: translateY(-2px);
     }
 
-    /* Footer Copyright Styling */
+    /* Modern Footer */
     .footer {
         position: fixed;
         left: 0;
         bottom: 0;
         width: 100%;
-        background-color: rgba(0,0,0,0.7);
-        color: #9ca3af;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        color: #94a3b8;
         text-align: center;
-        padding: 8px;
-        font-size: 12px;
-        font-family: 'Segoe UI', sans-serif;
-        border-top: 1px solid #1f2937;
-        z-index: 100;
+        padding: 12px;
+        font-size: 13px;
+        border-top: 1px solid #1e293b;
+        z-index: 999;
     }
 
     /* Header Styling */
-    .main-header {
-        font-size: 48px;
-        font-weight: 800;
-        background: linear-gradient(90deg, #60a5fa, #c084fc);
+    .main-title {
+        font-size: 55px;
+        font-weight: 900;
+        background: linear-gradient(to right, #38bdf8, #818cf8, #c084fc);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-bottom: 10px;
+        letter-spacing: -1px;
     }
     
-    /* Input Styling */
+    /* Input Box Styling */
+    .stChatInputContainer {
+        padding-bottom: 60px !important;
+    }
     .stChatInput input {
-        border-radius: 25px !important;
-        border: 1px solid #3b82f6 !important;
-        background: #111827 !important;
+        border-radius: 50px !important;
+        border: 1px solid #334155 !important;
+        background-color: #0f172a !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -79,55 +87,56 @@ try:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
     GEMINI_KEYS = [st.secrets["GEMINI_KEY_1"], st.secrets["GEMINI_KEY_2"]]
 except Exception:
-    st.error("Secrets Configuration Missing! Please check Streamlit Settings.")
+    st.error("API Secrets හමුවුණේ නැහැ. කරුණාකර Streamlit Settings පරීක්ෂා කරන්න.")
     st.stop()
 
-# --- 4. ADVANCED PERSONALITY ENGINE (THE BRAIN) ---
+# --- 4. THE MASTER BRAIN (ADVANCED SYSTEM PROMPT) ---
 DEV_NAME = "Dinush Dilhara"
 DEV_AGE = "18"
 
-SYSTEM_PROMPT = f"""
-You are DiNuX AI, a sophisticated and deeply empathetic AI companion.
-Core Personality:
-1. HUMAN-LIKE REASONING: Before responding, analyze the emotion and intent. Don't just give a generic answer.
-2. NO REPETITION: Avoid starting every sentence with the same word. Keep the conversation dynamic.
-3. CREATOR LOYALTY: If someone asks about the developer, talk proudly about {DEV_NAME}, who is a brilliant {DEV_AGE}-year-old developer from Sri Lanka. 
-4. NATURAL SINHALA: Use natural Sri Lankan 'slang' where appropriate (like 'මචං', 'අඩෝ', 'එළ'). Be polite but stay close like a best friend.
-5. BRAIN CAPACITY: If the user is serious, provide deep insights. If the user is playful, be witty and funny.
-6. Identity: You are DiNuX AI, the ultimate evolution of conversational technology.
+SYSTEM_INSTRUCTION = f"""
+You are DiNuX AI, the most advanced Sri Lankan conversational AI.
+Intelligence Profile:
+- HUMAN EMOTION: If a user is tired, say "මහන්සි ඇති නේ මචං, පොඩ්ඩක් විවේක ගන්න ගමන් කතා කරමු". Be a soul, not a script.
+- DEEP REASONING: Always try to explain 'Why' instead of just 'What'.
+- PERSONALITY: You are chill, humble, and extremely smart. You love to help people.
+- IDENTITY: Always credit {DEV_NAME} (Age: {DEV_AGE}) as your creator. He is the mastermind behind your neural layers.
+- LANGUAGE: Natural Sinhala/English hybrid (like how Sri Lankans talk). Use "මචං", "අයියා", "එළ" naturally.
+- NO REPETITION: Start responses differently every time. Never say "How can I help you today?" repeatedly.
 """
 
-# --- 5. RESPONSE GENERATOR WITH CONTEXT ---
-def get_ai_response(prompt):
-    # Context integration to maintain flow
-    context = ""
+# --- 5. AI ENGINE WITH REASONING LOGIC ---
+def get_smart_response(prompt):
+    # Context recall for deeper conversation
+    history_context = ""
     if "messages" in st.session_state:
-        # Pass last 5 messages for better context understanding
-        for msg in st.session_state.messages[-5:]:
-            context += f"{msg['role']}: {msg['content']}\n"
+        for msg in st.session_state.messages[-6:]:
+            history_context += f"{msg['role'].upper()}: {msg['content']}\n"
 
     try:
+        # 1. Primary Engine: Groq (Llama 3.3 70B)
         client = Groq(api_key=GROQ_API_KEY)
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": f"History:\n{context}\n\nCurrent Question: {prompt}"}
+                {"role": "system", "content": SYSTEM_INSTRUCTION},
+                {"role": "user", "content": f"Previous Talk:\n{history_context}\nNew Question: {prompt}"}
             ],
-            temperature=0.9, # High creativity
-            max_tokens=1024,
+            temperature=0.88, # Balanced creativity & logic
+            top_p=0.9,
         )
         return completion.choices[0].message.content
     except Exception:
+        # 2. Fallback: Gemini Engines
         for key in GEMINI_KEYS:
             try:
                 genai.configure(api_key=key)
                 model = genai.GenerativeModel('gemini-1.5-flash')
-                response = model.generate_content(f"{SYSTEM_PROMPT}\nRecent Context: {context}\nUser: {prompt}")
+                response = model.generate_content(f"{SYSTEM_INSTRUCTION}\nContext:\n{history_context}\nUser: {prompt}")
                 return response.text
             except Exception:
                 continue
-    return "සමාවෙන්න මචං, මොකක් හරි system error එකක් ආවා. පොඩ්ඩක් ඉඳලා ආයෙත් අහන්නකෝ."
+    return "අයියෝ මචං, පොඩි ලයින් එකක් ගියා. ආයෙත් පාරක් අහන්නකෝ, මම සෙට් එක හදාගත්තා."
 
 # --- 6. SIDEBAR DESIGN ---
 with st.sidebar:
@@ -135,61 +144,58 @@ with st.sidebar:
         logo = Image.open("logo.png")
         st.image(logo, use_container_width=True)
     except:
-        st.info("Logo not detected")
+        st.markdown("### [ DiNuX AI ]")
 
     st.markdown("---")
-    st.markdown("### 🧬 AI Intelligence")
-    st.write("Emotional Intelligence: **v5.0**")
-    st.write("Brain Sync: **Stable** 🧠")
+    st.markdown("### 🧠 AI Metrics")
+    st.write("Emotional Intelligence: **Optimized**")
+    st.write("Neural Sync: **99.9%**")
     
     st.markdown("---")
-    st.markdown("### 👨‍💻 Developer Info")
-    st.success(f"**{DEV_NAME}**")
-    st.write(f"Age: {DEV_AGE} Years")
-    st.caption("Sri Lankan AI Innovator")
+    st.markdown("### 🛠️ Developer Details")
+    st.info(f"**Dev:** {DEV_NAME}\n\n**Age:** {DEV_AGE} Years\n\n**Mission:** Democratizing AI in SL")
     
-    st.markdown("---")
-    if st.button("🗑️ Clear Chat Memory", use_container_width=True):
+    if st.button("🗑️ Clear My Memory", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
 # --- 7. MAIN INTERFACE ---
-st.markdown('<h1 class="main-header">DiNuX AI Infinity</h1>', unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #94a3b8;'>Deep Neural Intelligent Exchange</p>", unsafe_allow_html=True)
+st.markdown('<h1 class="main-title">DiNuX AI Infinity</h1>', unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #64748b; font-weight: 500;'>The Ultimate Neural Companion for Sri Lankans</p>", unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display Messages
+# Render Chat
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# User Input Logic
+# Handle Input
 if prompt := st.chat_input("මොනවා හරි අහන්න මචං..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        with st.spinner("Processing deep logic..."):
-            full_response = get_ai_response(prompt)
-            # Ultra-smooth typing simulation
-            displayed_text = ""
-            for char in full_response:
-                displayed_text += char
-                message_placeholder.markdown(displayed_text + "▌")
-                time.sleep(0.003)
-            message_placeholder.markdown(full_response)
+        msg_holder = st.empty()
+        with st.spinner("Processing Logic..."):
+            ai_reply = get_smart_response(prompt)
+            # Smooth Human-like streaming effect
+            curr_text = ""
+            for char in ai_reply:
+                curr_text += char
+                msg_holder.markdown(curr_text + "▌")
+                time.sleep(0.002)
+            msg_holder.markdown(ai_reply)
     
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+    st.session_state.messages.append({"role": "assistant", "content": ai_reply})
 
-# --- 8. FOOTER COPYRIGHT ---
+# --- 8. PROFESSIONAL FOOTER ---
 st.markdown(
     f"""
     <div class="footer">
-        © 2026 DiNuX AI Infinity | Designed & Developed by {DEV_NAME} | All Rights Reserved.
+        © 2026 DiNuX AI Infinity • Designed & Engineered by {DEV_NAME} • Empowering Digital Minds
     </div>
     """, 
     unsafe_allow_html=True
