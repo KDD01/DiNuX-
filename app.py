@@ -1,16 +1,20 @@
 import streamlit as st
 from groq import Groq
 import os
+from langchain_community.tools.tavily_search import TavilySearchResults
 
 # --- 1. CONFIGURATION ---
-API_KEY = "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"
+GROQ_API_KEY = "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"
+TAVILY_API_KEY = "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"
 
 try:
-    client = Groq(api_key=API_KEY)
+    client = Groq(api_key=GROQ_API_KEY)
+    # AI එකට Google Search කිරීමේ හැකියාව ලබා දෙන Tool එක
+    search_tool = TavilySearchResults(tavily_api_key=TAVILY_API_KEY)
 except Exception as e:
     st.error(f"Setup Error: {e}")
 
-# --- 2. UI SETTINGS ---
+# --- 2. UI SETTINGS (Dinush's Custom CSS) ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
 
 st.markdown("""
@@ -43,12 +47,10 @@ st.markdown("""
 
 # --- 3. SIDEBAR MENU ---
 with st.sidebar:
-    # පින්තූරය තිබේදැයි පරීක්ෂා කර පෙන්වීම
     logo_path = "logo.png.png"
     if os.path.exists(logo_path):
         st.image(logo_path, use_container_width=True)
     else:
-        # පින්තූරය නැතිනම් icon එකක් පෙන්වයි
         st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=80)
         st.warning("logo.png.png file එක GitHub එකට දාන්න.")
         
@@ -98,12 +100,36 @@ if prompt := st.chat_input("DiNuX සමඟ කතා කරන්න..."):
         response_placeholder = st.empty()
         full_response = ""
         
+        # AI Behavior & Instructions
+        system_instructions = (
+            "You are DiNuX AI, a highly logical and friendly assistant created by Dinush Dilhara. "
+            "Your personality is warm and helpful. "
+            "CORE RULES: "
+            "1. LOGIC: Always provide accurate, step-by-step reasoning. "
+            "2. REAL-TIME: Use the provided web context to answer questions about current events or news. "
+            "3. PERSONA: If the user asks you to be a girlfriend/boyfriend, switch to a supportive and loving tone while remaining intelligent. "
+            "4. ERROR FIXING: If you detect a mistake in your logic, correct it before finalizing the answer."
+        )
+
         try:
+            # සැබෑ කාලීන තොරතුරු අවශ්‍ය දැයි පරීක්ෂා කිරීම (Search Trigger)
+            search_context = ""
+            keywords = ["news", "today", "අද", "දැන්", "current", "weather", "match", "latest", "time"]
+            if any(word in prompt.lower() for word in keywords):
+                try:
+                    search_results = search_tool.run(prompt)
+                    search_context = f"\n\n[WEB SEARCH CONTEXT]: {search_results}"
+                except:
+                    search_context = "\n\n(Note: Tried searching live web but connection was slow. Using internal knowledge.)"
+
+            # Chat History එක සහ System Prompt එක එකතු කිරීම
             chat_history = [
-                {"role": "system", "content": "You are DiNuX AI, a logical and friendly Sinhala assistant. Creator: Dinush Dilhara. Respond in natural Sinhala."}
+                {"role": "system", "content": system_instructions + search_context}
             ]
-            chat_history.extend(st.session_state.messages[-15:])
+            # අන්තිම message 10ක් මතක තබා ගනී
+            chat_history.extend(st.session_state.messages[-10:]) 
             
+            # Groq API එක හරහා පිළිතුර ලබා ගැනීම
             completion = client.chat.completions.create(
                 model=selected_model,
                 messages=chat_history,
@@ -120,4 +146,7 @@ if prompt := st.chat_input("DiNuX සමඟ කතා කරන්න..."):
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
         except Exception as e:
-            st.error(f"Error: {e}")
+            # වැරදි ආවොත් ඒවා user ට නොපෙන්වා ලස්සනට හසුරුවයි
+            error_friendly = "සමාවෙන්න Dinush, පොඩි error එකක් ආවා. මම ඒක fix කරගන්න ගමන් ඉන්නේ. ඔයාට පුළුවන්ද ආයෙත් ඒක අහන්න?"
+            st.error(f"Internal Logic Error: {e}")
+            st.session_state.messages.append({"role": "assistant", "content": error_friendly})
