@@ -2,12 +2,14 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# --- 1. CORE API SETUP ---
-# API එක configure කිරීම
+# --- 1. CORE API & MODEL SETTINGS ---
 API_KEY = "AIzaSyBtKQ9XAelwCGDC6uD3UgEJzLC5bMM5FxQ"
 genai.configure(api_key=API_KEY)
 
-# --- 2. ADVANCED UI DESIGN (CSS) ---
+# Models list for auto-switching
+MODELS = ["gemini-1.5-flash", "gemini-1.5-pro"]
+
+# --- 2. ELITE UI STYLING ---
 st.set_page_config(page_title="DiNuX ai Pro", layout="wide", page_icon="🧬")
 
 st.markdown("""
@@ -24,14 +26,9 @@ st.markdown("""
     .power-by { font-size: 11px; color: #58a6ff; font-weight: bold; letter-spacing: 3px; margin-top: -5px; }
     @keyframes shine { to { background-position: 200% center; } }
     
-    /* Control Panel Card */
-    .panel-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
-    
-    /* Fixed Footer */
+    .panel-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
     .footer-fixed { position: fixed; bottom: 0; left: 0; width: 100%; background: #0d1117; padding: 10px; border-top: 1px solid #30363d; text-align: center; z-index: 100; }
-    .copy-text { font-size: 10px; color: #8b949e; margin: 0; }
-    
-    /* Input Box Adjustment */
+    .copy-text { font-size: 10px; color: #8b949e; }
     .stChatInputContainer { margin-bottom: 50px !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -41,6 +38,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "show_settings" not in st.session_state:
     st.session_state.show_settings = False
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = MODELS[0]
 
 # --- 4. SIDEBAR ---
 with st.sidebar:
@@ -49,8 +48,8 @@ with st.sidebar:
         st.session_state.show_settings = not st.session_state.show_settings
         st.rerun()
     st.write("---")
-    st.info("**Developer:** Dinush Dilhara\n\n**Studio:** KDD STUDIO")
-    if st.button("🗑️ Reset Chat"):
+    st.info("**Developer:** Dinush Dilhara\n**Studio:** KDD STUDIO")
+    if st.button("🗑️ Reset Neural Path"):
         st.session_state.messages = []
         st.rerun()
 
@@ -68,7 +67,7 @@ if st.session_state.show_settings:
         st.markdown('<div class="panel-card">', unsafe_allow_html=True)
         c1, c2, c3 = st.columns([0.45, 0.45, 0.1])
         with c1:
-            core_model = st.selectbox("Intelligence Core", ["gemini-1.5-flash", "gemini-1.5-pro"])
+            st.session_state.selected_model = st.selectbox("Intelligence Core", MODELS)
         with c2:
             vision_file = st.file_uploader("Vision Feed", type=["png", "jpg", "jpeg"])
         with c3:
@@ -77,7 +76,6 @@ if st.session_state.show_settings:
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 else:
-    core_model = "gemini-1.5-flash"
     vision_file = None
 
 # --- 7. CHAT LOGIC ---
@@ -85,51 +83,53 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
+prompt = st.chat_input("Ask DiNuX anything...")
 
 if prompt:
-    # User message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # AI Response
     with st.chat_message("assistant"):
-        try:
-            # 1. පද්ධතිය සූදානම් කිරීම (Safety Filters සම්පූර්ණයෙන්ම අක්‍රියයි)
-            model = genai.GenerativeModel(
-                model_name=core_model,
-                safety_settings=[
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                ],
-                system_instruction="You are DiNuX AI by Dinush Dilhara. Speak in professional and friendly Sinhala/English."
-            )
+        response_placeholder = st.empty()
+        
+        # --- AUTO-FIX & MODEL SWITCHING LOGIC ---
+        success = False
+        # Try primary model then backup
+        model_queue = [st.session_state.selected_model] + [m for m in MODELS if m != st.session_state.selected_model]
+        
+        for current_m in model_queue:
+            if success: break
+            try:
+                model = genai.GenerativeModel(
+                    model_name=current_m,
+                    safety_settings=[{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                                     {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                                     {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                                     {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}],
+                    system_instruction="You are DiNuX AI by Dinush Dilhara. A professional, helpful assistant. Reply in high-quality Sinhala and English."
+                )
 
-            # 2. Input සකස් කිරීම
-            content_to_send = [prompt]
-            if vision_file:
-                content_to_send.append(Image.open(vision_file))
+                content_list = [prompt]
+                if vision_file:
+                    content_list.append(Image.open(vision_file))
 
-            # 3. එකපාර පිළිතුර ලබා ගැනීම (No Streaming)
-            with st.spinner("Processing..."):
-                response = model.generate_content(content_to_send)
+                with st.spinner(f"Neural Sync ({current_m})..."):
+                    response = model.generate_content(content_list)
                 
-            if response.text:
-                st.markdown(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-            else:
-                st.warning("Could not process. Please try again.")
+                if response and response.text:
+                    response_placeholder.markdown(response.text)
+                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                    success = True
+            except Exception:
+                continue # දෝෂයක් ආවොත් ඊළඟ model එකට මාරු වෙනවා
 
-        except Exception as e:
-            # කිසිම error එකක් පෙන්වන්නේ නැතිව handle කිරීම
-            st.error("System connection glitch. I am re-syncing. Please resend the message.")
+        if not success:
+            response_placeholder.error("Core connection lost. Please check your internet and try again.")
 
 # Footer
 st.markdown("""
     <div class="footer-fixed">
-        <p class="copy-text">© 2026 KDD STUDIO | BY DINUSH DILHARA</p>
+        <p class="copy-text">© 2026 KDD STUDIO | ARCHITECTED BY DINUSH DILHARA</p>
     </div>
     """, unsafe_allow_html=True)
