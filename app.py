@@ -1,58 +1,46 @@
 import streamlit as st
-from groq import Groq
+import google.generativeai as genai
 import os
 from langchain_community.tools.tavily_search import TavilySearchResults
+from PIL import Image
+import io
 
 # --- 1. CONFIGURATION ---
-GROQ_API_KEY = "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"
+# මෙතනට ඔයාගේ API Keys දාන්න
+GEMINI_API_KEY = "ඔයාගේ_GEMINI_API_KEY_එක" 
 TAVILY_API_KEY = "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"
 
 try:
-    client = Groq(api_key=GROQ_API_KEY)
+    genai.configure(api_key=GEMINI_API_KEY)
     search_tool = TavilySearchResults(tavily_api_key=TAVILY_API_KEY)
 except Exception as e:
     st.error(f"Setup Error: {e}")
 
-# --- 2. UI SETTINGS (Updated for Mobile & Better Visibility) ---
+# --- 2. UI SETTINGS (Dinush's Custom CSS) ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #030712; color: white; }
-    
-    /* Shining Effect - Fixed for Mobile */
     .shining-title {
-        font-size: clamp(30px, 8vw, 42px); /* Mobile වලට ගැලපෙන විදිහට size එක වෙනස් වේ */
+        font-size: clamp(30px, 8vw, 42px);
         font-weight: 800;
         text-align: center;
         background: linear-gradient(120deg, #ffffff 20%, #888888 50%, #ffffff 80%);
         background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        /* Mobile visibility fix */
-        background-clip: text; 
-        color: white; /* fallback for older browsers */
+        background-clip: text; color: white;
         animation: shine 3s linear infinite;
-        margin-bottom: 5px;
-        line-height: 1.2;
-        width: 100%;
-        display: block;
+        margin-bottom: 5px; line-height: 1.2;
     }
-
     @keyframes shine { to { background-position: 200% center; } }
-    
     .caption-text { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 14px; }
-    
-    section[data-testid="stSidebar"] {
-        background-color: #080c14;
-    }
-    
-    /* Chat bubbles text color fix */
-    .stChatMessage { color: white !important; }
+    section[data-testid="stSidebar"] { background-color: #080c14; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR MENU ---
+# --- 3. SIDEBAR (Features & Settings) ---
 with st.sidebar:
     logo_path = "logo.png.png"
     if os.path.exists(logo_path):
@@ -60,17 +48,16 @@ with st.sidebar:
     else:
         st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=80)
         
-    st.title("DiNuX Menu")
+    st.title("DiNuX Pro Menu")
     st.markdown("---")
     
-    st.subheader("⚙️ AI Settings")
-    selected_model = st.selectbox(
-        "Choose AI Model",
-        ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"],
-        index=0
-    )
+    # Feature 1: Image Upload (Vision)
+    st.subheader("📷 Vision Mode")
+    uploaded_image = st.file_uploader("Upload an image (Logic gates, math, etc.)", type=["jpg", "png", "jpeg"])
     
-    temp_val = st.slider("Creativity (Temperature)", 0.0, 1.0, 0.8) # 0.8 optimized for natural feel
+    # Feature 2: PDF/Document Support (Coming in prompt)
+    st.subheader("⚙️ Settings")
+    temp_val = st.slider("Creativity (Temperature)", 0.0, 1.0, 0.8)
     
     if st.button("🗑️ Clear Conversation"):
         st.session_state.messages = []
@@ -91,7 +78,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 5. CHAT LOGIC ---
+# --- 5. CORE LOGIC (Vision + Search + Natural Sinhala) ---
 if prompt := st.chat_input("DiNuX සමඟ කතා කරන්න..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -101,53 +88,43 @@ if prompt := st.chat_input("DiNuX සමඟ කතා කරන්න..."):
         response_placeholder = st.empty()
         full_response = ""
         
-        # Highly optimized Sinhala System Instructions
+        # System Prompt (The Personality)
         system_instructions = (
-            "You are DiNuX AI, a highly intelligent and friendly assistant created by Dinush Dilhara. "
-            "IMPORTANT: Talk in natural, spoken Sri Lankan Sinhala (Casual Sinhala). "
-            "Use words like 'ඔයා', 'මම', 'පුළුවන්', 'නේද' instead of formal words like 'ඔබ', 'මා', 'හැකිය'. "
-            "Be like a real friend or a partner if the user wants. Always be supportive and logical. "
-            "If search data is provided, use it to give updated answers."
+            "You are DiNuX AI by Dinush Dilhara. Use natural, spoken Sri Lankan Sinhala. "
+            "Be a logical assistant, but if requested, act as a loving partner (GF/BF). "
+            "If an image is provided, analyze it deeply. If search data is here, use it."
         )
 
+        # 1. Real-time Search Logic
         search_context = ""
         if any(word in prompt.lower() for word in ["news", "today", "අද", "දැන්", "match", "latest", "price"]):
             try:
                 search_results = search_tool.run(prompt)
-                search_context = f"\n\n[Search Data]: {search_results}"
+                search_context = f"\n\n[Real-time Info]: {search_results}"
             except:
                 pass
 
-        def get_ai_response(model_to_use):
-            chat_history = [{"role": "system", "content": system_instructions + search_context}]
-            chat_history.extend(st.session_state.messages[-10:])
-            return client.chat.completions.create(
-                model=model_to_use,
-                messages=chat_history,
-                temperature=temp_val,
-                stream=True,
-            )
-
         try:
-            completion = get_ai_response(selected_model)
-            for chunk in completion:
-                if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
-                    response_placeholder.markdown(full_response + "▌")
-        
-        except Exception as e:
-            if "429" in str(e):
-                st.warning("🔄 Switching to backup mode for better speed...")
-                try:
-                    completion = get_ai_response("llama-3.1-8b-instant")
-                    for chunk in completion:
-                        if chunk.choices[0].delta.content:
-                            full_response += chunk.choices[0].delta.content
-                            response_placeholder.markdown(full_response + "▌")
-                except:
-                    st.error("Server is busy. Try again in a few seconds.")
-            else:
-                st.error("පොඩි දෝෂයක් ආවා. අපි ඒක හදමු.")
+            # 2. Vision Logic (If image is uploaded)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            input_data = [system_instructions + search_context + prompt]
+            
+            if uploaded_image:
+                img = Image.open(uploaded_image)
+                input_data.append(img)
+                st.info("🎨 Image detected! Analyzing with Vision...")
 
-        response_placeholder.markdown(full_response)
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+            # 3. Generate Response (Streaming)
+            response = model.generate_content(input_data, stream=True)
+            
+            for chunk in response:
+                if chunk.text:
+                    full_response += chunk.text
+                    response_placeholder.markdown(full_response + "▌")
+            
+            response_placeholder.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+        except Exception as e:
+            st.error(f"Error: {e}. (Make sure your Gemini API key is correct!)")
