@@ -4,7 +4,7 @@ from groq import Groq
 import time
 from PIL import Image
 
-# --- 1. PAGE CONFIGURATION ---
+# --- 1. PAGE SETUP ---
 st.set_page_config(
     page_title="DiNuX AI Infinity Pro",
     page_icon="💎",
@@ -12,103 +12,106 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ELITE DARK UI CUSTOM CSS ---
+# --- 2. ELITE DARK & SMART UI CSS ---
 st.markdown("""
     <style>
-    /* Main Background */
+    /* Ultra Dark Background */
     .stApp {
-        background-color: #050505;
-        color: #d1d5db;
+        background: radial-gradient(circle at center, #111827 0%, #000000 100%);
+        color: #f3f4f6;
     }
 
-    /* Professional Sidebar */
+    /* Sidebar Glassmorphism */
     section[data-testid="stSidebar"] {
-        background-color: #0a0a0a !important;
-        border-right: 1px solid #262626;
+        background-color: rgba(0, 0, 0, 0.9) !important;
+        border-right: 1px solid #374151;
     }
 
-    /* Glassmorphism Chat Bubble */
+    /* Professional Message Bubbles */
     .stChatMessage {
-        background: rgba(255, 255, 255, 0.02) !important;
+        background: rgba(31, 41, 55, 0.5) !important;
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        border-radius: 18px !important;
-        margin-bottom: 12px !important;
-        padding: 20px !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px !important;
     }
 
-    /* Modern Scrollbar */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+    /* Custom Input Styling */
+    .stChatInputContainer { padding: 1.5rem !important; }
+    .stChatInput input {
+        border-radius: 30px !important;
+        border: 1px solid #3b82f6 !important;
+        background: #1f2937 !important;
+    }
 
-    /* Footer Styling */
+    /* Footer Copyright */
     .footer {
         position: fixed;
-        left: 0;
-        bottom: 0;
+        left: 0; bottom: 0;
         width: 100%;
         background-color: transparent;
-        color: #6b7280;
+        color: #4b5563;
         text-align: center;
         padding: 10px;
-        font-size: 12px;
-        letter-spacing: 1px;
+        font-size: 11px;
     }
 
-    /* Title Animation */
-    .main-title {
-        font-size: 45px;
-        font-weight: 900;
-        background: linear-gradient(90deg, #ffffff, #3b82f6, #9333ea);
+    /* Title Gradient */
+    .hero-title {
+        font-size: 50px;
+        font-weight: 800;
+        background: linear-gradient(to right, #60a5fa, #a78bfa);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
-        filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
-    }
-    
-    .stChatInput input {
-        border-radius: 30px !important;
-        border: 1px solid #262626 !important;
+        margin-bottom: 5px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SECRETS LOADING ---
+# --- 3. API SECRETS ---
 try:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
     GEMINI_KEYS = [st.secrets["GEMINI_KEY_1"], st.secrets["GEMINI_KEY_2"]]
 except Exception:
-    st.error("Secrets Configuration Missing! Please check Streamlit Settings.")
+    st.error("Secrets Configuration Missing! Please check Streamlit Cloud Settings.")
     st.stop()
 
-# --- 4. ULTRA-FRIENDLY SYSTEM INSTRUCTION ---
-# ඔයා ගැන විස්තර මෙතන "Developer Info" කොටසේ තියෙනවා
-DEVELOPER_INFO = {
-    "name": "Dinush Dilhara",
-    "age": "19",
-    "location": "Sri Lanka",
-    "status": "Young Tech Visionary"
-}
+# --- 4. HUMAN-LIKE PERSONALITY INSTRUCTION ---
+DEV_NAME = "Dinush Dilhara"
+DEV_AGE = "19"
 
+# මෙන්න මෙතන තමයි AI එකේ "මනුෂ්‍ය ගතිය" තීරණය වෙන්නේ
 SYSTEM_PROMPT = f"""
-You are DiNuX AI, a super-intelligent and extremely friendly AI buddy created by {DEVELOPER_INFO['name']}.
-Your Rules:
-1. When asked about your developer/creator/owner:
-   - Say: "මාව හැදුවේ 'දිනුෂ් දිල්හාර' (Dinush Dilhara). එයාට දැන් වයස {DEVELOPER_INFO['age']}යි. එයා ලංකාවේ ඉන්න දක්ෂ AI Developer කෙනෙක්!"
-2. Talk like a real Sri Lankan friend (මචං, මල්ලි, යාළුවා use කරන්න).
-3. Use warm, natural Sinhala. Avoid formal 'රොබෝ' language. 
-4. Be very smart, but also funny and caring.
-5. If someone asks "Who are you?", tell them you are DiNuX AI, the smartest companion for Sri Lankans.
+You are DiNuX AI, a warm, intelligent, and highly conversational AI companion.
+Personality Guidelines:
+1. NEVER act like a robot. Do not repeat the same phrases like "How can I help you?" every time.
+2. If the user says 'Hi' or 'Hello', respond like a close friend: "අඩෝ මචං! කොහොමද ඉතින්? අද මොකද වෙන්න ඕනේ?" or "හායි මචං, අදත් ආවද? මොනවද අලුත් විස්තර?"
+3. Use deep thinking. If a user is sad, be empathetic. If they are happy, be excited.
+4. When asked about your developer: Speak with pride about {DEV_NAME}, a {DEV_AGE}-year-old tech genius from Sri Lanka.
+5. Use natural Sri Lankan Sinhala (Casual & Friendly). Avoid formal "රාජකාරි" සිංහල.
+6. Vary your response style. Sometimes be funny, sometimes serious, but always human.
 """
 
-# --- 5. SMART ENGINE WITH FALLBACK ---
+# --- 5. SMART MULTI-ENGINE LOGIC ---
 def get_ai_response(prompt):
+    # Chat History එක context එක විදිහට එකතු කරනවා එකම දේ repeat වීම වැළැක්වීමට
+    chat_context = ""
+    if "messages" in st.session_state:
+        for msg in st.session_state.messages[-3:]: # අවසන් පණිවිඩ 3 මතක තබා ගනී
+            chat_context += f"{msg['role']}: {msg['content']}\n"
+
     try:
         client = Groq(api_key=GROQ_API_KEY)
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
-            temperature=0.85,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"Context history:\n{chat_context}\n\nCurrent Question: {prompt}"}
+            ],
+            temperature=0.9, # මේක වැඩි කරන තරමට AI එකේ නිර්මාණශීලී බව වැඩි වෙනවා
+            top_p=0.95,
         )
         return completion.choices[0].message.content
     except Exception:
@@ -116,74 +119,71 @@ def get_ai_response(prompt):
             try:
                 genai.configure(api_key=key)
                 model = genai.GenerativeModel('gemini-1.5-flash')
-                response = model.generate_content(f"{SYSTEM_PROMPT}\nUser: {prompt}")
+                response = model.generate_content(f"{SYSTEM_PROMPT}\nHistory: {chat_context}\nUser: {prompt}")
                 return response.text
             except Exception:
                 continue
-    return "අයියෝ මචං, පොඩි connection error එකක් ආවා. ආයෙත් පාරක් අහපංකෝ!"
+    return "අයියෝ මචං, පොඩි ලයින් එකක් ගියා. ආයෙත් පාරක් අහපන්කෝ!"
 
 # --- 6. SIDEBAR DESIGN ---
 with st.sidebar:
-    # Round Logo Handling
     try:
-        image = Image.open("logo.png")
-        st.image(image, use_container_width=True)
+        logo = Image.open("logo.png")
+        st.image(logo, use_container_width=True)
     except:
-        st.info("Logo.png not found")
+        st.info("Logo.png Not Found")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### ⚙️ System Status")
-    st.markdown("🟢 **Engines Active**")
-    st.markdown("🔒 **End-to-End Encrypted**")
+    st.markdown("---")
+    st.markdown("### 🧬 AI Intelligence")
+    st.write("Emotional Engine: **Active** ❤️")
+    st.write("Context Awareness: **High** 🧠")
     
     st.markdown("---")
     st.markdown("### 👨‍💻 Mastermind")
-    st.success(f"**{DEVELOPER_INFO['name']}**")
-    st.write(f"Age: {DEVELOPER_INFO['age']} Years")
+    st.success(f"**{DEV_NAME}**")
+    st.caption(f"Lead Developer | Age: {DEV_AGE}")
     
     st.markdown("---")
     if st.button("🗑️ Clear My Memory", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# --- 7. MAIN CHAT AREA ---
-st.markdown('<h1 class="main-title">DiNuX AI Infinity Pro</h1>', unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #9ca3af;'>Powered by Next-Gen Neural Engines</p>", unsafe_allow_html=True)
+# --- 7. MAIN INTERFACE ---
+st.markdown('<h1 class="hero-title">DiNuX AI Infinity</h1>', unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #6b7280;'>Not just a Bot, but a Buddy.</p>", unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display history
+# Show Chat History
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# User input
-if prompt := st.chat_input("මොනවා හරි අහන්න මචං..."):
+# User Input
+if prompt := st.chat_input("මොකක්ද මචං දැනගන්න ඕනේ?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        with st.spinner("Processing..."):
+        placeholder = st.empty()
+        with st.spinner("හිතනවා..."):
             full_response = get_ai_response(prompt)
-            # Smooth Typing effect
-            temp_text = ""
+            # Smooth Human-like typing effect
+            displayed = ""
             for char in full_response:
-                temp_text += char
-                message_placeholder.markdown(temp_text + "▌")
-                time.sleep(0.003)
-            message_placeholder.markdown(full_response)
+                displayed += char
+                placeholder.markdown(displayed + "▌")
+                time.sleep(0.002)
+            placeholder.markdown(full_response)
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-# --- 8. FOOTER COPYRIGHT MESSAGE ---
+# --- 8. FOOTER ---
 st.markdown(
-    f"""
-    <div class="footer">
-        © 2026 DiNuX AI Infinity | Designed & Developed by {DEVELOPER_INFO['name']}
-    </div>
-    """, 
+    f"""<div class="footer">
+    © 2026 DiNuX AI Infinity | Built with ❤️ by {DEV_NAME}
+    </div>""", 
     unsafe_allow_html=True
 )
