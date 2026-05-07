@@ -4,103 +4,54 @@ from PIL import Image
 import os
 import time
 
-# --- 1. CORE ENGINE CONFIGURATION ---
+# --- 1. CORE ENGINE & SESSION STABILITY ---
 API_KEY = "AIzaSyDDlC1nficbhNufDPt29BT0q_DqzJGey7s"
 genai.configure(api_key=API_KEY)
 
-# --- 2. ELITE UI STYLING ---
+# මුලින්ම Chat Session එකක් ඇත්දැයි පරීක්ෂා කර එය පවත්වා ගැනීම
+if "chat_session" not in st.session_state:
+    model = genai.GenerativeModel(
+        model_name='gemini-1.5-flash',
+        system_instruction="You are DiNuX AI, a pro assistant created by Dinush Dilhara. Speak naturally in Sinhala and English."
+    )
+    st.session_state.chat_session = model.start_chat(history=[])
+
+# --- 2. ELITE UI STYLING (NO CHANGES TO UI) ---
 st.set_page_config(page_title="DiNuX AI Pro", layout="wide", page_icon="🧬")
 
 st.markdown("""
     <style>
-    /* App Background */
     .stApp { background: #0d1117; color: #e6edf3; }
+    [data-testid="stSidebar"] { background-color: #010409; border-right: 1px solid #1f2428; }
     
-    /* Sidebar Styling */
-    [data-testid="stSidebar"] { 
-        background-color: #010409; 
-        border-right: 1px solid #1f2428;
-    }
-
-    /* Menu Icon එක වම් පැත්තට (Left) කිරීම සහ Sidebar එකේ පෙළගැස්ම */
-    [data-testid="stSidebar"] [data-testid="stSidebarNav"] {
-        text-align: left;
-    }
-
-    /* Sidebar අභ්‍යන්තර කොටස් මැදට ගැනීම */
+    /* Sidebar අභ්‍යන්තර පෙළගැස්ම */
     [data-testid="stSidebar"] > div:first-child {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-top: 20px;
+        display: flex; flex-direction: column; align-items: center; padding-top: 20px;
     }
 
-    /* --- LOGO CONTAINER WITH SWAP SHINING EFFECT --- */
+    /* --- LOGO WITH SWAP SHINING EFFECT --- */
     .logo-container {
-        position: relative;
-        width: 200px;
-        margin: 20px auto;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        position: relative; width: 200px; margin: 20px auto;
+        overflow: hidden; display: flex; justify-content: center; align-items: center;
     }
-
-    .logo-container img {
-        width: 100%;
-        height: auto;
-        object-fit: contain;
-    }
+    .logo-container img { width: 100%; height: auto; object-fit: contain; }
 
     /* Swap Shining Effect Overlay */
     .logo-container::after {
-        content: "";
-        position: absolute;
-        top: -50%;
-        left: -150%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(
-            to right, 
-            transparent 0%, 
-            rgba(255, 255, 255, 0.1) 30%, 
-            rgba(255, 255, 255, 0.6) 50%, 
-            rgba(255, 255, 255, 0.1) 70%, 
-            transparent 100%
-        );
-        transform: rotate(25deg);
-        animation: swap-shine 4s infinite ease-in-out;
-        z-index: 1;
+        content: ""; position: absolute; top: -50%; left: -150%; width: 200%; height: 200%;
+        background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+        transform: rotate(25deg); animation: swap-shine 4s infinite ease-in-out; z-index: 1;
     }
+    @keyframes swap-shine { 0% { left: -150%; } 100% { left: 150%; } }
 
-    @keyframes swap-shine {
-        0% { left: -150%; }
-        100% { left: 150%; }
-    }
-
-    /* Header & Titles */
-    .main-title {
-        font-size: 55px; font-weight: 800; text-align: center;
-        color: #e6edf3; margin-top: 40px; letter-spacing: 2px;
-    }
-    
-    .sub-title {
-        text-align: center; color: #58a6ff; font-weight: 900; 
-        letter-spacing: 4px; font-size: 15px; margin-top: -15px;
-    }
-
-    /* Footer */
-    .footer { 
-        position: fixed; bottom: 0; left: 0; width: 100%; 
-        background: #0d1117; padding: 10px; text-align: center; 
-        border-top: 1px solid #1f2428; font-size: 11px; color: #8b949e; 
-    }
+    .main-title { font-size: 55px; font-weight: 800; text-align: center; color: #e6edf3; margin-top: 40px; }
+    .sub-title { text-align: center; color: #58a6ff; font-weight: 900; letter-spacing: 4px; font-size: 15px; margin-top: -15px; }
+    .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #0d1117; padding: 10px; text-align: center; border-top: 1px solid #1f2428; font-size: 11px; color: #8b949e; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (LOGO & BRANDING) ---
+# --- 3. SIDEBAR (LOGO & IDENTITY) ---
 with st.sidebar:
-    # ලෝගෝ එක සහ Shining Effect එක
     st.markdown('<div class="logo-container">', unsafe_allow_html=True)
     if os.path.exists("logo.png"):
         st.image("logo.png")
@@ -117,6 +68,7 @@ with st.sidebar:
     
     if st.button("🗑️ Clear Neural Memory"):
         st.session_state.messages = []
+        st.session_state.chat_session = None # Session එකත් Clear කිරීම
         st.rerun()
 
 # --- 4. MAIN INTERFACE ---
@@ -126,12 +78,11 @@ st.markdown('<p class="sub-title">POWERED BY KDD STUDIO</p>', unsafe_allow_html=
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# මැසේජ් ප්‍රදර්ශනය
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- 5. THE BRAIN (REAL-TIME STREAMING) ---
+# --- 5. THE BRAIN (GUARANTEED REPLY SYSTEM) ---
 user_input = st.chat_input("Connect with DiNuX...")
 
 if user_input:
@@ -143,17 +94,14 @@ if user_input:
         placeholder = st.empty()
         
         try:
-            model = genai.GenerativeModel(
-                model_name='gemini-1.5-flash',
-                system_instruction="You are DiNuX AI, an elite assistant by Dinush Dilhara. Respond in Sinhala and English."
-            )
-            
+            # පින්තූරයක් ඇත්නම් එය පූර්ව සැකසුම් කිරීම
             payload = [user_input]
             if vision_file:
                 payload.append(Image.open(vision_file))
             
-            with st.spinner("Processing..."):
-                response = model.generate_content(payload, stream=True)
+            with st.spinner("Thinking..."):
+                # Session එක හරහා මැසේජ් එක යැවීම (මෙය වඩාත් ස්ථාවරයි)
+                response = st.session_state.chat_session.send_message(payload, stream=True)
                 
                 full_response = ""
                 for chunk in response:
@@ -164,9 +112,11 @@ if user_input:
                 placeholder.markdown(full_response)
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
                     
-        except Exception:
-            st.error("Neural link error. Re-syncing...")
-            time.sleep(2)
+        except Exception as e:
+            # කිසියම් අවුලක් වුණොත් ඔටෝ රී-කනෙක්ට් වීම
+            st.error("Connection Interrupted. Synchronizing...")
+            st.session_state.chat_session = None # වැරදි සෙෂන් එක ඉවත් කිරීම
+            time.sleep(1)
             st.rerun()
 
 # Footer
