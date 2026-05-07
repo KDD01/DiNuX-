@@ -1,6 +1,5 @@
 streamlit
 google-generativeai
-langchain-community
-tavily-python
 Pillow
 streamlit-mic-recorder
+plotly
