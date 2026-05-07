@@ -51,28 +51,27 @@ st.markdown("""
     .dev-text { color: #94a3b8; font-size: 16px; font-weight: 500; display: block; margin-top: 5px; }
     .power-text { color: #3b82f6; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; display: block; margin-top: 2px; }
 
-    /* Sidebar Styling */
+    /* Sidebar Background */
     section[data-testid="stSidebar"] { 
         background-color: #080c14 !important; 
         border-right: 1px solid #1e293b;
     }
+
+    /* Sidebar Feature Buttons Styling */
+    .feature-btn-container {
+        background: #111827;
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid #1f2937;
+        margin-top: 10px;
+    }
     
-    /* Custom Sidebar Button Styling */
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        background-color: #1e293b;
-        color: white;
-        border: 1px solid #334155;
-    }
-    .stButton>button:hover {
-        background-color: #3b82f6;
-        border-color: #60a5fa;
-    }
+    /* Hide default uploader decorations */
+    div[data-testid="stFileUploader"] section { padding: 0 !important; min-height: 0 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (Integrated Features) ---
+# --- 3. SIDEBAR (With Separate Feature Buttons) ---
 with st.sidebar:
     logo_path = "logo.png.png"
     if os.path.exists(logo_path):
@@ -80,19 +79,23 @@ with st.sidebar:
     else:
         st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=60)
     
-    st.title("DiNuX Menu")
+    st.title("DiNuX Settings")
+    selected_model = st.selectbox("Model", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    
     st.markdown("---")
     
-    # AI Intelligence Setting
-    selected_model = st.selectbox("Intelligence Level", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    # --- SEPARATE FEATURE BUTTONS SECTION ---
+    st.subheader("🚀 Features")
     
-    st.markdown("### 🛠️ Features")
-    # File/Image Option inside Menu
-    img_file = st.file_uploader("📷 Image/File Analysis", type=["jpg", "png", "jpeg"], key="side_img")
+    # Feature 1: Image Analysis Button
+    st.write("📸 **Image Analysis**")
+    img_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"], key="btn_img", label_visibility="collapsed")
     
-    # Voice Option inside Menu
-    st.write("🎙️ Voice Interaction")
-    voice_data = mic_recorder(start_prompt="Start Talking", stop_prompt="Stop & Send", key='side_voice')
+    st.write("") # Spacer
+
+    # Feature 2: Voice Interaction Button
+    st.write("🎙️ **Voice Command**")
+    voice_data = mic_recorder(start_prompt="🎤 Start", stop_prompt="✔️ Send", key='btn_voice')
     
     st.markdown("---")
     if st.button("🗑️ Clear Chat History"):
@@ -113,7 +116,6 @@ st.markdown(f'''
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Displaying Chat Messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -123,16 +125,15 @@ prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
 # --- 6. CORE LOGIC ---
 if prompt or img_file or voice_data:
-    # Resolve user input source
-    user_query = prompt if prompt else "Analyze this content."
+    user_query = prompt if prompt else "Analyze the attached content."
     if voice_data:
-        user_query = "Voice input received. (Responding in spoken Sinhala...)"
+        user_query = "Voice input received. (Transcribing voice...)"
     
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.markdown(user_query)
         if img_file:
-            st.image(img_file, width=250, caption="Uploaded Data")
+            st.image(img_file, width=250, caption="Attached File")
 
     with st.chat_message("assistant"):
         res_box = st.empty()
@@ -166,4 +167,4 @@ if prompt or img_file or voice_data:
             st.session_state.messages.append({"role": "assistant", "content": full_res})
 
         except Exception as e:
-            st.error("🔄 Connection busy. Trying to recover...")
+            st.error("🔄 Connection busy. Try again in a moment.")
