@@ -136,7 +136,7 @@ with st.sidebar:
     ai_mood = st.select_slider("Select Brain Persona", options=["Cool", "Friendly", "Romantic", "Expert"])
     type_speed = st.slider("Speech Speed", 0.001, 0.01, 0.002)
     
-    with st.expander("🚀 Developer & Company"):
+    with st.expander("Developer & Company"):
         st.success(f"**Developer:** {DEV_NAME}")
         st.write(f"**Company:** {COMPANY}\n**Contacts:** {CONTACT}")
         st.markdown(f"[Visit Website]({SITE})")
@@ -150,6 +150,8 @@ st.markdown("""
     <div class="hero-container">
         <div class="main-title">DiNuX AI Infinity</div>
         <div class="sub-title">Beyond Intelligence • A True Human Companion</div>
+        
+        <div class="sub-title">Powerd by KDD Studio</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -167,7 +169,7 @@ if prompt := st.chat_input("Ask anything"):
 
     with st.chat_message("assistant"):
         output = st.empty()
-        with st.spinner("සිතමින් පවතිනවා..."):
+        with st.spinner("Thinking..."):
             reply = get_neural_reply(prompt, ai_mood)
             full_out = ""
             for char in reply:
