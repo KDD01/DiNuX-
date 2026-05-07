@@ -15,74 +15,71 @@ try:
 except Exception as e:
     st.error("Neural Connection Error")
 
-# --- 2. ELITE UI DESIGN (STYLING) ---
+# --- 2. ADVANCED CSS (Fixed Layout & Professional UI) ---
 st.set_page_config(page_title="DiNuX ai Pro", layout="wide", page_icon="🧬")
 
 st.markdown("""
     <style>
-    /* Dark Deep Sea Theme */
-    .stApp { background: radial-gradient(circle at top right, #0d1117, #010409); color: #e6edf3; }
+    /* Dark Theme */
+    .stApp { background: #0d1117; color: #e6edf3; }
     
-    /* Sidebar */
-    section[data-testid="stSidebar"] {
-        background-color: rgba(13, 17, 23, 0.9) !important;
-        border-right: 1px solid rgba(48, 54, 61, 0.5);
-    }
-
-    /* Header & Branding */
-    .header-container { text-align: center; padding: 20px 0; }
+    /* Branding */
+    .header-container { text-align: center; padding-top: 10px; margin-bottom: 20px; }
     .shining-title {
-        font-size: 50px; font-weight: 900;
+        font-size: 45px; font-weight: 900;
         background: linear-gradient(90deg, #ffffff, #58a6ff, #ffffff);
         background-size: 200% auto;
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         animation: shine 4s linear infinite;
-        margin-bottom: 5px;
     }
-    .power-text {
-        font-size: 12px; font-weight: 700; color: #3b82f6;
-        text-transform: uppercase; letter-spacing: 3px;
-    }
+    .power-text { font-size: 10px; color: #3b82f6; letter-spacing: 2px; font-weight: bold; }
     @keyframes shine { to { background-position: 200% center; } }
 
-    /* Control Center Expander Styling */
-    .stExpander {
-        background: rgba(22, 27, 34, 0.7) !important;
-        border: 1px solid #30363d !important;
-        border-radius: 12px !important;
+    /* Fixed Bottom Container (Chat + Copyright) */
+    .fixed-bottom {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: #0d1117;
+        padding: 10px 0;
+        z-index: 999;
+        border-top: 1px solid #30363d;
     }
 
-    /* Professional Cards */
-    .feature-card {
-        background: rgba(22, 27, 34, 0.6);
-        border: 1px solid rgba(48, 54, 61, 0.8);
-        border-radius: 10px; padding: 12px; margin-bottom: 10px;
+    /* Copyright Text */
+    .copyright {
+        text-align: center;
+        font-size: 10px;
+        color: #8b949e;
+        padding-top: 5px;
     }
 
-    /* Custom Chat Message */
-    .stChatMessage { border-radius: 12px; border: 1px solid rgba(48, 54, 61, 0.3); }
+    /* Customizing Sidebar */
+    section[data-testid="stSidebar"] { background-color: #161b22 !important; }
+
+    /* Chat Area Scroll Spacing */
+    .chat-container { margin-bottom: 150px; }
+
+    /* Control Center Icon Styling */
+    div[data-testid="stExpander"] {
+        border: none !important;
+        background: transparent !important;
+    }
+    .stExpander summary p { font-size: 24px !important; margin: 0 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (Developer Info & Health) ---
+# --- 3. SIDEBAR ---
 with st.sidebar:
     st.markdown("<h2 style='color:#58a6ff;'>🧬 DiNuX AI</h2>", unsafe_allow_html=True)
-    st.caption("Quantum Suite v3.2")
+    st.info("**Developer:** Dinush Dilhara\n\n**Studio:** KDD STUDIO")
     st.write("---")
-    
-    st.markdown("### 👤 Lead Developer")
-    st.info("**Dinush Dilhara**\n\nKDD STUDIO Architecture")
-    
-    st.write("---")
-    st.markdown("### 📊 Neural Stats")
-    st.write("Uptime: 99.9%")
-    st.write("Core: Stable")
-    
-    if st.button("🗑️ Reset Neural Path"):
+    if st.button("🗑️ Clear History"):
         st.session_state.messages = []
         st.rerun()
 
-# --- 4. HEADER SECTION ---
+# --- 4. HEADER ---
 st.markdown("""
     <div class="header-container">
         <h1 class="shining-title">DiNuX AI</h1>
@@ -90,72 +87,60 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- 5. CONTROL CENTER (Expandable Menu) ---
-with st.expander("🛠️ Open Control Center", expanded=False):
-    col_c1, col_c2, col_c3 = st.columns(3)
-    
-    with col_c1:
-        st.markdown("**Core Settings**")
-        selected_model = st.selectbox("Intelligence Core", ["gemini-1.5-flash", "gemini-1.5-pro"])
-        
-    with col_c2:
-        st.markdown("**Vision Mode**")
-        uploaded_file = st.file_uploader("Source Image", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
-        if uploaded_file:
-            st.success("Vision Active")
-            
-    with col_c3:
-        st.markdown("**System Actions**")
-        if st.button("Creative Writing"):
-            st.session_state.prompt_type = "Write a creative story."
-        if st.button("Code Assistant"):
-            st.session_state.prompt_type = "Help me with a Python script."
-
-# --- 6. MAIN CHAT INTERFACE ---
+# --- 5. CHAT DISPLAY ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Chat History Container
-chat_container = st.container(height=450, border=False)
-with chat_container:
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+# Wrapper for scrollable chat
+st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+st.markdown('</div>', unsafe_allow_html=True)
 
-# Chat Input
-prompt = st.chat_input("Ask DiNuX anything...")
+# --- 6. FIXED BOTTOM INTERFACE (Control Center + Chat Input + Copyright) ---
+# We use columns to align the symbol and the chat bar
+bot_col1, bot_col2 = st.columns([0.1, 0.9])
 
-# --- 7. NEURAL CORE LOGIC ---
+with bot_col1:
+    # Small Settings Icon as Control Center
+    with st.expander("⚙️", expanded=False):
+        selected_model = st.selectbox("Brain", ["gemini-1.5-flash", "gemini-1.5-pro"])
+        uploaded_file = st.file_uploader("Vision", type=["png", "jpg", "jpeg"])
+
+with bot_col2:
+    prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
+
+# Copyright Notice
+st.markdown("""
+    <div class="copyright">
+        © 2026 KDD STUDIO | All Rights Reserved | Designed by Dinush Dilhara
+    </div>
+    """, unsafe_allow_html=True)
+
+# --- 7. CORE AI LOGIC ---
 if prompt:
-    # Update UI with User Message
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with chat_container:
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-    # Response Generation
-    with chat_container:
-        with st.chat_message("assistant"):
-            res_placeholder = st.empty()
-            full_res = ""
+    with st.chat_message("assistant"):
+        res_area = st.empty()
+        full_res = ""
+        try:
+            # Model Initialization
+            model = genai.GenerativeModel(model_name=selected_model)
+            inputs = [f"You are DiNuX AI by Dinush Dilhara. Use friendly Sinhala.", prompt]
+            if uploaded_file:
+                inputs.append(Image.open(uploaded_file))
+
+            response = model.generate_content(inputs, stream=True)
+            for chunk in response:
+                if chunk.text:
+                    full_res += chunk.text
+                    res_area.markdown(full_res + "▌")
             
-            try:
-                model = genai.GenerativeModel(model_name=selected_model)
-                system_instruction = "You are DiNuX AI, a pro assistant by Dinush Dilhara. Speak in high-quality Sinhala."
-                
-                # Dynamic inputs
-                content_list = [system_instruction, prompt]
-                if uploaded_file:
-                    content_list.append(Image.open(uploaded_file))
-                
-                response = model.generate_content(content_list, stream=True)
-                for chunk in response:
-                    if chunk.text:
-                        full_res += chunk.text
-                        res_placeholder.markdown(full_res + "▌")
-                
-                res_placeholder.markdown(full_res)
-                st.session_state.messages.append({"role": "assistant", "content": full_res})
-                
-            except Exception:
-                st.error("Neural path blocked. Please check connectivity.")
+            res_area.markdown(full_res)
+            st.session_state.messages.append({"role": "assistant", "content": full_res})
+        except Exception:
+            st.error("Brain Connection Error.")
