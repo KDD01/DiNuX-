@@ -13,94 +13,78 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. UI Styling (Enhanced Modern UI)
+# 2. UI Styling (Enhanced Glassmorphism UI)
 st.markdown("""
     <style>
-    /* Main Background */
     .stApp {
-        background: radial-gradient(circle at top right, #1e1e2f, #0e0e11);
-        color: #ffffff;
+        background: radial-gradient(circle at 50% 10%, #1e1e3f 0%, #0e0e11 100%);
+        color: #e3e3e3;
     }
-
-    /* Hide Streamlit Headers */
     header, footer {visibility: hidden;}
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0e0e11; }
+    ::-webkit-scrollbar-thumb { background: #3c4043; border-radius: 10px; }
 
-    /* Sidebar Styling */
-    [data-testid="stSidebar"] {
-        background-color: rgba(20, 20, 25, 0.8);
-        backdrop-filter: blur(10px);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    /* Chat Message Bubbles */
-    .stChatMessage {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 15px !important;
-        padding: 15px !important;
-        margin-bottom: 15px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-
-    /* DiNuX Gradient Logo */
+    /* Logo & Text Styling */
     .dinux-logo {
-        background: linear-gradient(90deg, #00f2fe, #4facfe, #7000ff);
-        -webkit-background-clip: text; 
-        -webkit-text-fill-color: transparent;
-        font-weight: 800; 
-        font-size: 2.5rem; 
-        text-align: center;
-        letter-spacing: 2px;
-        margin-bottom: 1rem;
+        background: linear-gradient(90deg, #00dbde, #fc00ff);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        font-weight: 800; font-size: 2.8rem; text-align: center;
+        filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3));
     }
 
-    /* Input Box Styling */
+    /* Chat Styling */
+    div[data-testid="stChatMessage"] {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 20px !important;
+        padding: 20px !important;
+        margin-bottom: 15px !important;
+    }
+
+    /* Input Bar Fix */
     div[data-testid="stChatInput"] {
-        position: fixed; 
-        bottom: 30px; 
-        padding: 0 10%;
+        position: fixed; bottom: 30px; 
+        z-index: 1000; background: transparent !important;
     }
     
     div[data-testid="stChatInput"] > div {
-        background: rgba(30, 30, 36, 0.9) !important;
-        border: 1px solid rgba(79, 172, 254, 0.5) !important;
+        background: #1e1e24 !important;
+        border: 1px solid #4facfe !important;
         border-radius: 30px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     }
 
-    /* Welcome Screen Text */
-    .welcome-container {
-        text-align: center; 
-        margin-top: 15vh;
+    /* Welcome Screen */
+    .welcome-box {
+        text-align: center; margin-top: 15vh;
+        animation: fadeIn 1.5s ease-in;
     }
-    .welcome-title {
-        font-size: 4.5rem; 
-        font-weight: 800; 
-        background: linear-gradient(120deg, #ffffff, #4facfe, #00f2fe);
-        -webkit-background-clip: text; 
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0px;
-    }
-    .welcome-sub {
-        font-size: 1.5rem; 
-        color: #888; 
-        font-weight: 300;
-    }
+    @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
     </style>
     """, unsafe_allow_html=True)
 
 # --- API CORE SETUP ---
-GEMINI_API_KEY = "AIzaSyB-3mqtHBYgaEqTSi1aACF76VH745vvejs"
+# ඔබ ලබාදුන් අලුත් API Key එක මෙතැනට ඇතුළත් කර ඇත
+GEMINI_API_KEY = "AIzaSyB27W11humZP7AiXWmrkwEHQcNq2LXxjkw"
 
 def initialize_model():
     try:
         genai.configure(api_key=GEMINI_API_KEY)
+        # පවතින Models හඳුනා ගැනීම
         available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        priority_models = ['models/gemini-1.5-flash', 'models/gemini-pro', 'models/gemini-1.5-pro']
         
-        selected_model = next((pm for pm in priority_models if pm in available_models), available_models[0] if available_models else None)
-        return genai.GenerativeModel(selected_model) if selected_model else None
+        # වඩාත් ස්ථාවර Models තෝරා ගැනීම
+        priority = ['models/gemini-1.5-flash', 'models/gemini-pro', 'models/gemini-1.5-pro']
+        selected = next((m for m in priority if m in available_models), available_models[0] if available_models else None)
+        
+        if selected:
+            return genai.GenerativeModel(selected)
+        return None
     except Exception as e:
-        st.error(f"Initialization Failed: {e}")
+        st.error(f"API Error: {e}")
         return None
 
 model = initialize_model()
@@ -116,7 +100,7 @@ def search_web(query):
 def play_voice(text):
     try:
         lang = 'si' if any("\u0d80" <= c <= "\u0dff" for c in text) else 'en'
-        tts = gTTS(text=text, lang=lang, slow=False)
+        tts = gTTS(text=text[:500], lang=lang, slow=False) # Limit length for speed
         fp = io.BytesIO()
         tts.write_to_fp(fp)
         b64 = base64.b64encode(fp.getvalue()).decode()
@@ -127,39 +111,38 @@ def play_voice(text):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Welcome Screen (Only shows if no chat exists)
+# Welcome Screen
 if not st.session_state.messages:
     st.markdown("""
-        <div class="welcome-container">
-            <p style="color:#4facfe; font-weight:bold; letter-spacing:4px; text-transform: uppercase;">Next-Gen Intelligence</p>
-            <h1 class="welcome-title">Hello, DiNuX</h1>
-            <h2 class="welcome-sub">How can I assist your creative journey today?</h2>
+        <div class="welcome-box">
+            <h1 style="font-size: 4.5rem; font-weight: 900; color: white;">DiNuX <span style="color:#4facfe;">AI</span></h1>
+            <p style="font-size: 1.5rem; color: #aaa;">Dinush Dilhara ගේ නිර්මාණයක්... ඔබට කෙසේ උදව් වෙන්නද?</p>
         </div>
     """, unsafe_allow_html=True)
 
-# Display Chat History
+# History Display
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
 # --- PROCESSING ---
-if prompt := st.chat_input("Message DiNuX..."):
-    # Add User Message
+if prompt := st.chat_input("Ask anything from DiNuX..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Generate Response
     with st.chat_message("assistant"):
         placeholder = st.empty()
         full_response = ""
         
-        search_results = search_web(prompt)
-        sys_instructions = f"ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara. Context: {search_results}. 100% සත්‍ය තොරතුරු ලබා දෙන්න."
+        # Web Search logic
+        search_data = search_web(prompt)
+        sys_prompt = f"ඔබේ නම DiNuX AI. නිර්මාණය කළේ Dinush Dilhara. තොරතුරු: {search_data}. සැමවිටම කෙටියෙන් සහ පැහැදිලිව පිළිතුරු දෙන්න."
         
         try:
             if model:
-                response = model.generate_content([sys_instructions, prompt], stream=True)
+                # Streaming Response
+                response = model.generate_content([sys_prompt, prompt], stream=True)
                 for chunk in response:
                     if chunk.text:
                         full_response += chunk.text
@@ -169,20 +152,22 @@ if prompt := st.chat_input("Message DiNuX..."):
                 play_voice(full_response)
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
             else:
-                st.error("Model unavailable. Please check API key.")
+                st.error("Model unavailable. Please double check your API Key settings.")
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"නැවත උත්සාහ කරන්න (Error: {str(e)})")
 
-# --- SIDEBAR UI ---
+# --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h1 class='dinux-logo'>DiNuX AI</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; color:#888;'>v2.0 Advanced Edition</p>", unsafe_allow_html=True)
+    st.markdown("<h1 class='dinux-logo'>DiNuX</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;'>Advanced Artificial Intelligence</p>", unsafe_allow_html=True)
     st.markdown("---")
     
-    st.subheader("Chat Controls")
-    if st.button("🗑️ Clear Chat History", use_container_width=True):
+    if st.button("🔄 New Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
     
     st.markdown("---")
-    st.info("Created by **Dinush Dilhara**\n\nPowered by Google Gemini & DS Media Hub.")
+    st.markdown("### Developer Details")
+    st.write("👤 **Name:** Dinush Dilhara")
+    st.write("🌐 **Platform:** DS MEDIA HUB")
+    st.info("මෙම AI පද්ධතිය Google Gemini 1.5 තාක්ෂණයෙන් බලගන්වා ඇත.")
