@@ -4,7 +4,7 @@ import os
 from PIL import Image
 from streamlit_mic_recorder import mic_recorder
 
-# --- 1. CONFIGURATION & STABLE API SETUP ---
+# --- 1. CONFIGURATION ---
 GEMINI_API_KEY = "AIzaSyBtKQ9XAelwCGDC6uD3UgEJzLC5bMM5FxQ" 
 
 try:
@@ -16,17 +16,17 @@ try:
         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
     ]
 except Exception as e:
-    st.error("API Configuration Error.")
+    st.error("API Error")
 
-# --- 2. ADVANCED UI & MINI FLOATING MENU CSS ---
+# --- 2. ADVANCED CSS (Animations & Professional UI) ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #030712; color: white; }
     
-    /* Branding Centering */
-    .header-container { text-align: center; margin-bottom: 35px; width: 100%; padding-top: 10px; }
+    /* Branding */
+    .header-container { text-align: center; margin-bottom: 35px; width: 100%; }
     .shining-title {
         font-size: clamp(30px, 10vw, 55px);
         font-weight: 900;
@@ -39,57 +39,43 @@ st.markdown("""
         margin: 0;
     }
     @keyframes shine { to { background-position: 200% center; } }
-    .dev-text { color: #94a3b8; font-size: 15px; font-weight: 500; display: block; margin-top: 5px; }
-    .power-text { color: #3b82f6; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; display: block; margin-top: 2px; }
+    .dev-text { color: #94a3b8; font-size: 15px; }
+    .power-text { color: #3b82f6; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
 
-    /* Hide Streamlit Expander Arrow & Style Floating Menu */
-    details summary::-webkit-details-marker { display:none !important; }
-    details summary { list-style: none !important; }
-    
+    /* Floating Menu Design */
     div[data-testid="stExpander"] {
         position: fixed;
         top: 65px;
         left: 10px;
         z-index: 999999;
-        width: 60px !important;
-        background-color: #1e293b !important;
-        border-radius: 12px !important;
-        border: 1px solid #334155 !important;
-        padding: 5px !important;
-        transition: 0.3s;
+        width: 65px !important;
+        background-color: rgba(30, 41, 59, 0.9) !important;
+        backdrop-filter: blur(10px);
+        border-radius: 15px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
     
-    div[data-testid="stExpander"] summary p {
-        font-size: 24px !important;
-        margin: 0 !important;
-        text-align: center;
-        color: #60a5fa;
-    }
+    /* Remove default arrow */
+    details summary::-webkit-details-marker { display:none !important; }
+    details summary { list-style: none !important; cursor: pointer; }
+    
+    /* Animation when opening */
+    details[open] { animation: slideIn 0.3s ease-out; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Style for simple buttons inside expander */
+    /* Align items in list */
     .stFileUploader section { padding: 0 !important; }
+    
+    /* Hide Floating Menu when Sidebar is Open (Standard Streamlit Sidebar detection) */
+    [data-sidebar-state="expanded"] ~ .main .floating-menu { display: none !important; }
+    
     section[data-testid="stSidebar"] { background-color: #080c14 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. FLOATING ICON BUTTONS (Auto-close Logic) ---
-if "menu_state" not in st.session_state:
-    st.session_state.menu_state = False
-
-with st.container():
-    # 'label' එක විදිහට "☰" විතරක් භාවිතා කර අයිකනය සකස් කිරීම
-    with st.expander("☰", expanded=st.session_state.menu_state):
-        # Attractive simple buttons/inputs
-        img_file = st.file_uploader("📸", type=["jpg", "png", "jpeg"], key="f_up", label_visibility="collapsed")
-        
-        # Audio recording button
-        voice_data = mic_recorder(start_prompt="🎤", stop_prompt="✔️", key='f_vc')
-        
-        # Auto-close once input is detected
-        if img_file or voice_data:
-            st.session_state.menu_state = False
-
-# --- 4. MAIN SIDEBAR (Settings) ---
+# --- 3. SIDEBAR (Settings) ---
 with st.sidebar:
     logo_path = "logo.png.png"
     if os.path.exists(logo_path):
@@ -99,6 +85,25 @@ with st.sidebar:
     if st.button("🗑️ Clear Chat"):
         st.session_state.messages = []
         st.rerun()
+
+# --- 4. FLOATING MENU LOGIC ---
+# Sidebar එක open වෙලාද කියලා බලන logic එක
+if "sidebar_state" not in st.session_state:
+    st.session_state.sidebar_state = "collapsed"
+
+with st.container():
+    # Icons විතරක් සහිත ලස්සන expander එක
+    with st.expander("☰", expanded=False):
+        # Image Button Icon
+        img_file = st.file_uploader("📷", type=["jpg", "png", "jpeg"], key="f_up", label_visibility="collapsed")
+        
+        # Voice Button Icon
+        st.markdown("<div style='text-align: center; padding: 5px;'>🎙️</div>", unsafe_allow_html=True)
+        voice_data = mic_recorder(start_prompt="●", stop_prompt="■", key='f_vc')
+        
+        # Auto-close on input
+        if img_file or voice_data:
+            st.session_state.menu_open = False
 
 # --- 5. CENTERED HEADER ---
 st.markdown(f'''
@@ -112,7 +117,6 @@ st.markdown(f'''
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display Message History
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -120,12 +124,11 @@ for message in st.session_state.messages:
 # --- 6. CHAT INPUT ---
 prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
-# --- 7. STABLE MULTIMODAL LOGIC (Fixed Errors) ---
+# --- 7. CORE LOGIC (Error Free) ---
 if prompt or img_file or voice_data:
-    # Logic to handle user input
-    user_query = prompt if prompt else "Analyze the content."
+    user_query = prompt if prompt else "නිරීක්ෂණය කරන්න."
     if voice_data:
-        user_query = "Audio command received."
+        user_query = "Voice input received."
         
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
@@ -136,19 +139,14 @@ if prompt or img_file or voice_data:
     with st.chat_message("assistant"):
         res_area = st.empty()
         full_res = ""
-        
-        # Friendly Sinhala System Message
         sys_msg = "You are DiNuX AI, created by Dinush Dilhara. Use friendly spoken Sinhala (oyaa/mama)."
 
         try:
             model = genai.GenerativeModel(model_name=selected_model, safety_settings=safety_settings)
-            
-            # Prepare content parts properly to avoid 'Busy/Overload' errors
             content_parts = [sys_msg, user_query]
             if img_file:
                 content_parts.append(Image.open(img_file))
 
-            # Stream the response
             response = model.generate_content(content_parts, stream=True)
             for chunk in response:
                 if chunk.text:
@@ -159,6 +157,4 @@ if prompt or img_file or voice_data:
             st.session_state.messages.append({"role": "assistant", "content": full_res})
 
         except Exception as e:
-            # Enhanced Error Handling
-            st.warning("සමාවෙන්න, මම මේ වෙලාවේ පොඩි විවේකයක් ගන්නවා. කරුණාකර තව මොහොතකින් උත්සාහ කරන්න.")
-            print(f"Internal Log: {e}")
+            st.error("Error connecting to brain. Please try again.")
