@@ -151,7 +151,6 @@ st.markdown("""
         <div class="main-title">DiNuX AI Infinity</div>
         <div class="sub-title">Beyond Intelligence • A True Human Companion</div>
         
-        <div class="sub-title">Powerd by KDD Studio</div>
     </div>
     """, unsafe_allow_html=True)
 
