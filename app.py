@@ -2,105 +2,105 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# --- 1. CONFIGURATION ---
-# ඔයා දුන්න අලුත් Key එක මම ස්ථාවරව මෙතනට දැම්මා
+# --- 1. SETTING UP THE BRAIN (STABLE CORE) ---
+# ඔයා දුන්න අලුත්ම API Key එක
 API_KEY = "AIzaSyDDlC1nficbhNufDPt29BT0q_DqzJGey7s"
-genai.configure(api_key=API_KEY)
 
-# --- 2. UI STYLING ---
+@st.cache_resource
+def get_ai_model(model_name):
+    genai.configure(api_key=API_KEY)
+    # Safety filters සම්පූර්ණයෙන්ම අක්‍රිය කළා (Errors වළක්වන්න)
+    safety = [
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+    ]
+    return genai.GenerativeModel(
+        model_name=model_name,
+        safety_settings=safety,
+        system_instruction="You are DiNuX AI by Dinush Dilhara. A highly professional assistant. Speak in friendly Sinhala and English."
+    )
+
+# --- 2. PREMIUM UI STYLING ---
 st.set_page_config(page_title="DiNuX ai Pro", layout="wide", page_icon="🧬")
 
 st.markdown("""
     <style>
     .stApp { background: #0d1117; color: #e6edf3; }
     .shining-title {
-        font-size: 50px; font-weight: 900;
-        background: linear-gradient(120deg, #58a6ff, #ffffff, #58a6ff);
+        font-size: 55px; font-weight: 900; text-align: center;
+        background: linear-gradient(90deg, #58a6ff, #ffffff, #58a6ff);
         background-size: 200% auto;
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         animation: shine 4s linear infinite;
-        text-align: center;
+        margin-bottom: 0px;
     }
     @keyframes shine { to { background-position: 200% center; } }
-    .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #0d1117; padding: 10px; text-align: center; border-top: 1px solid #30363d; }
+    .subtitle { text-align: center; color: #58a6ff; letter-spacing: 4px; font-weight: bold; margin-bottom: 30px; }
+    .stChatMessage { border-radius: 15px; border: 1px solid #30363d !important; }
+    .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #0d1117; padding: 10px; text-align: center; border-top: 1px solid #30363d; font-size: 11px; color: #8b949e; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SESSION MANAGEMENT ---
+# --- 3. SESSION & SIDEBAR ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "show_settings" not in st.session_state:
-    st.session_state.show_settings = False
 
-# --- 4. SIDEBAR ---
 with st.sidebar:
-    st.title("🧬 DiNuX AI")
-    if st.button("⚙️ Settings"):
-        st.session_state.show_settings = not st.session_state.show_settings
+    st.markdown("<h1 style='color:#58a6ff;'>🧬 DiNuX AI</h1>", unsafe_allow_html=True)
     st.write("---")
-    st.info("Dev: Dinush Dilhara\nStudio: KDD STUDIO")
-    if st.button("🗑️ Clear Chat"):
+    selected_model = st.selectbox("Neural Core", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    vision_file = st.file_uploader("Vision Source", type=["jpg", "png", "jpeg"])
+    st.write("---")
+    st.info("**Developer:** Dinush Dilhara\n\n**Studio:** KDD STUDIO")
+    if st.button("🗑️ Reset All"):
         st.session_state.messages = []
         st.rerun()
 
-# --- 5. HEADER ---
+# --- 4. HEADER ---
 st.markdown('<h1 class="shining-title">DiNuX AI</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align:center; color:#58a6ff; letter-spacing:3px;">POWERED BY KDD STUDIO</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">POWERED BY KDD STUDIO</p>', unsafe_allow_html=True)
 
-# --- 6. SETTINGS PANEL ---
-if st.session_state.show_settings:
-    with st.expander("System Configuration", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            model_choice = st.selectbox("Model", ["gemini-1.5-flash", "gemini-1.5-pro"])
-        with col2:
-            img_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
-else:
-    model_choice = "gemini-1.5-flash"
-    img_file = None
+# --- 5. CHAT ENGINE ---
+# කලින් තිබුණ මැසේජ් පෙන්වීම
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-# --- 7. CHAT DISPLAY ---
-for m in st.session_state.messages:
-    with st.chat_message(m["role"]):
-        st.markdown(m["content"])
-
-# --- 8. CHAT LOGIC (THE FIX) ---
-prompt = st.chat_input("Ask DiNuX anything...")
+# අලුත් මැසේජ් එකක් ලැබීම
+prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
 if prompt:
+    # 1. User මැසේජ් එක ඇතුළත් කිරීම
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # 2. AI පිළිතුර ලබා ගැනීම
     with st.chat_message("assistant"):
-        # මෙතනදී තමයි වැදගත්ම දේ වෙන්නේ
-        try:
-            # Model එක load කිරීම
-            model = genai.GenerativeModel(
-                model_name=model_choice,
-                system_instruction="You are DiNuX AI by Dinush Dilhara. Reply in friendly Sinhala/English."
-            )
+        with st.spinner("Synchronizing..."):
+            try:
+                # AI Model එක ස්ථාවරව ලබා ගැනීම
+                model = get_ai_model(selected_model)
+                
+                # Content එක සකස් කිරීම
+                payload = [prompt]
+                if vision_file:
+                    payload.append(Image.open(vision_file))
+                
+                # පිළිතුර ජෙනරේට් කිරීම (සෘජුවම)
+                response = model.generate_content(payload)
+                
+                if response.text:
+                    st.markdown(response.text)
+                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                else:
+                    st.error("I'm having trouble processing that. Let's try again.")
             
-            # Content එක සූදානම් කිරීම
-            content = [prompt]
-            if img_file:
-                content.append(Image.open(img_file))
+            except Exception as e:
+                # මොකක් හරි ලොකු එරර් එකක් ආවොත් පමණක් පෙන්වන්න
+                st.error(f"Neural Path Error: {str(e)}")
 
-            # කිසිම streaming එකක් නැතුව Direct Response එකක් ගැනීම
-            with st.spinner("Thinking..."):
-                response = model.generate_content(content)
-            
-            if response.text:
-                st.markdown(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-            else:
-                st.error("No response from AI. Please try again.")
-
-        except Exception as e:
-            # Error එක ආවොත් ඒක UI එකේ පෙන්වන්නේ නැතුව background එකේ fix කිරීම
-            st.warning("Connection hiccup detected. Please resend that last message.")
-            # මෙතන 'e' එක print කළොත් ඔයාට පේනවා ඇයි error එක එන්නේ කියලා
-            print(f"Debug Error: {e}")
-
-# Footer
-st.markdown('<div class="footer"><p style="font-size:10px; color:#8b949e;">© 2026 KDD STUDIO | DINUSH DILHARA</p></div>', unsafe_allow_html=True)
+# --- 6. FOOTER ---
+st.markdown('<div class="footer">© 2026 KDD STUDIO | ARCHITECTED BY DINUSH DILHARA</div>', unsafe_allow_html=True)
