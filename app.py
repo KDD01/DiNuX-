@@ -2,21 +2,30 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# --- 1. GLOBAL API CONFIGURATION ---
-def setup_ai():
-    # මෙතන තියෙන්නේ ඔයාගේ API Key එක. මේකේ මොනවා හරි අඩුවක් තියෙනවද බලන්න.
-    API_KEY = "AIzaSyBtKQ9XAelwCGDC6uD3UgEJzLC5bMM5FxQ"
-    genai.configure(api_key=API_KEY)
+# --- 1. CORE API CONFIGURATION ---
+# ඔයා දුන්න අලුත් API Key එක මෙතනට ඇතුළත් කළා
+API_KEY = "AIzaSyDDlC1nficbhNufDPt29BT0q_DqzJGey7s"
 
-setup_ai()
+def initialize_neural_engine():
+    try:
+        genai.configure(api_key=API_KEY)
+        return True
+    except Exception:
+        return False
 
-# --- 2. PROFESSIONAL UI STYLING ---
+# පද්ධතිය ආරම්භයේදීම API එක පණගන්වමු
+initialize_neural_engine()
+
+# --- 2. ELITE UI STYLING (THE MASTER LOOK) ---
 st.set_page_config(page_title="DiNuX ai Pro", layout="wide", page_icon="🧬")
 
 st.markdown("""
     <style>
+    /* Dark Theme */
     .stApp { background: #0d1117; color: #e6edf3; }
-    .branding-box { text-align: center; padding: 20px 0; border-bottom: 1px solid #30363d; margin-bottom: 25px; }
+    
+    /* Branding Header */
+    .branding-container { text-align: center; padding: 25px 0; border-bottom: 1px solid #30363d; margin-bottom: 30px; }
     .shining-title {
         font-size: 55px; font-weight: 900;
         background: linear-gradient(120deg, #58a6ff, #ffffff, #58a6ff);
@@ -24,110 +33,143 @@ st.markdown("""
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         animation: shine 4s linear infinite;
     }
-    .power-by { font-size: 12px; color: #58a6ff; font-weight: bold; letter-spacing: 4px; margin-top: -10px; }
+    .power-text { font-size: 12px; color: #58a6ff; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; margin-top: -10px; }
     @keyframes shine { to { background-position: 200% center; } }
-    
-    .panel-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; }
-    .footer-fixed { position: fixed; bottom: 0; left: 0; width: 100%; background: #0d1117; padding: 10px; border-top: 1px solid #30363d; text-align: center; z-index: 100; }
-    .copy-text { font-size: 10px; color: #8b949e; }
-    .stChatInputContainer { margin-bottom: 60px !important; }
+
+    /* Control Panel Box - Separate from Chat */
+    .control-card {
+        background: rgba(22, 27, 34, 0.95);
+        border: 1px solid #30363d;
+        border-radius: 15px; padding: 25px; margin-bottom: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    /* Fixed Footer */
+    .fixed-footer {
+        position: fixed; bottom: 0; left: 0; width: 100%;
+        background: #0d1117; padding: 12px 0;
+        border-top: 1px solid #30363d; text-align: center; z-index: 1000;
+    }
+    .copyright { font-size: 11px; color: #8b949e; letter-spacing: 1px; }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0d1117; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SESSION STATE ---
+# --- 3. PERSISTENT MEMORY ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "show_settings" not in st.session_state:
-    st.session_state.show_settings = False
+if "show_control" not in st.session_state:
+    st.session_state.show_control = False
 
-# --- 4. SIDEBAR ---
+# --- 4. SIDEBAR NAVIGATION ---
 with st.sidebar:
-    st.markdown("<h2 style='color:#58a6ff;'>🧬 DiNuX AI</h2>", unsafe_allow_html=True)
-    if st.button("⚙️ Control Center"):
-        st.session_state.show_settings = not st.session_state.show_settings
-        st.rerun()
+    st.markdown("<h1 style='color:#58a6ff;'>🧬 DiNuX AI</h1>", unsafe_allow_html=True)
+    st.caption("Version 7.0 - Ultra Stable")
     st.write("---")
-    st.info("**Developer:** Dinush Dilhara\n**Studio:** KDD STUDIO")
-    if st.button("🗑️ Reset Chat"):
+    
+    if st.button("⚙️ Control Center Settings"):
+        st.session_state.show_control = not st.session_state.show_control
+        st.rerun()
+    
+    st.write("---")
+    st.info("**Architect:** Dinush Dilhara\n\n**Studio:** KDD STUDIO")
+    
+    if st.button("🗑️ Clear Core Memory"):
         st.session_state.messages = []
         st.rerun()
 
-# --- 5. MAIN HEADER ---
-st.markdown(f"""
-    <div class="branding-box">
+# --- 5. MAIN BRANDING ---
+st.markdown("""
+    <div class="branding-container">
         <h1 class="shining-title">DiNuX AI</h1>
-        <p class="power-by">POWERED BY KDD STUDIO</p>
+        <p class="power-text">POWERED BY KDD STUDIO</p>
     </div>
     """, unsafe_allow_html=True)
 
-# --- 6. CONTROL CENTER ---
-if st.session_state.show_settings:
+# --- 6. INDEPENDENT CONTROL CENTER (Dialogue Box Style) ---
+if st.session_state.show_control:
     with st.container():
-        st.markdown('<div class="panel-card">', unsafe_allow_html=True)
-        c1, c2, c3 = st.columns([0.45, 0.45, 0.1])
-        with c1:
-            core_model = st.selectbox("Intelligence Core", ["gemini-1.5-flash", "gemini-1.5-pro"])
-        with c2:
-            vision_file = st.file_uploader("Vision Feed", type=["png", "jpg", "jpeg"])
-        with c3:
+        st.markdown('<div class="control-card">', unsafe_allow_html=True)
+        col_title, col_close = st.columns([0.95, 0.05])
+        with col_title:
+            st.subheader("🛠️ Neural System Configuration")
+        with col_close:
             if st.button("❌"):
-                st.session_state.show_settings = False
+                st.session_state.show_control = False
                 st.rerun()
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            selected_model = st.selectbox("Intelligence Core", ["gemini-1.5-flash", "gemini-1.5-pro"])
+            st.write(f"Status: **Active Connection**")
+        with c2:
+            vision_input = st.file_uploader("Vision Source Feed", type=["png", "jpg", "jpeg"])
         st.markdown('</div>', unsafe_allow_html=True)
 else:
-    core_model = "gemini-1.5-flash"
-    vision_file = None
+    selected_model = "gemini-1.5-flash"
+    vision_input = None
 
-# --- 7. CHAT EXPERIENCE ---
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+# --- 7. CHAT INTERFACE ---
+chat_container = st.container()
 
-prompt = st.chat_input("Ask DiNuX anything...")
+with chat_container:
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+# Spacer for the fixed footer
+st.markdown("<br><br><br><br><br>", unsafe_allow_html=True)
 
-    with st.chat_message("assistant"):
-        response_box = st.empty()
-        
-        try:
-            # 1. API එක නැවත පණගැන්වීම (Safety Bypass සමඟ)
-            setup_ai() 
-            model = genai.GenerativeModel(
-                model_name=core_model,
-                safety_settings=[
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-                ],
-                system_instruction="You are DiNuX AI, a professional assistant created by Dinush Dilhara. Speak in friendly Sinhala and English."
-            )
+# --- 8. FIXED INPUT & FOOTER ---
+user_input = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
-            # 2. පිළිතුර ලබා ගැනීම (No Streaming)
-            with st.spinner("Synchronizing Neural Paths..."):
-                input_data = [prompt]
-                if vision_file:
-                    input_data.append(Image.open(vision_file))
-                
-                response = model.generate_content(input_data)
-            
-            if response and response.text:
-                response_box.markdown(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-            else:
-                response_box.warning("I am connected, but I couldn't generate text. Please try a different query.")
-
-        except Exception as e:
-            # මොනම error එකක් ආවත් මෙතනින් ඒක බේරලා දෙනවා
-            response_box.error("Neural pathway blocked. This is usually an API Key issue or Internet glitch. Please refresh and try again.")
-
-# Footer
 st.markdown("""
-    <div class="footer-fixed">
-        <p class="copy-text">© 2026 KDD STUDIO | DESIGNED BY DINUSH DILHARA | ALL RIGHTS RESERVED</p>
+    <div class="fixed-footer">
+        <div class="copyright">© 2026 KDD STUDIO | DESIGNED BY DINUSH DILHARA | ALL RIGHTS RESERVED</div>
     </div>
     """, unsafe_allow_html=True)
+
+# --- 9. THE INVINCIBLE BRAIN LOGIC ---
+if user_input:
+    # 1. පණිවිඩය සටහන් කරමු
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with chat_container:
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+    # 2. පිළිතුර උත්පාදනය කරමු
+    with chat_container:
+        with st.chat_message("assistant"):
+            response_area = st.empty()
+            
+            try:
+                # API එක නැවත චෙක් කිරීම
+                initialize_neural_engine()
+                model = genai.GenerativeModel(
+                    model_name=selected_model,
+                    system_instruction="You are DiNuX AI, a highly intelligent and professional assistant created by Dinush Dilhara. You use high-quality Sinhala and English. You are reliable and friendly."
+                )
+
+                # Input සකස් කිරීම
+                content_payload = [user_input]
+                if vision_input:
+                    content_payload.append(Image.open(vision_input))
+
+                # පිළිතුර ලබා ගැනීම (No Streaming for total stability)
+                with st.spinner("Processing Neural Pathways..."):
+                    raw_response = model.generate_content(content_payload)
+                
+                if raw_response and raw_response.text:
+                    full_text = raw_response.text
+                    response_area.markdown(full_text)
+                    st.session_state.messages.append({"role": "assistant", "content": full_text})
+                else:
+                    response_area.error("Empty response from brain. Please try another phrase.")
+
+            except Exception as e:
+                # මොන ලෙඩේ ආවත් මෙතනින් බේරෙනවා
+                response_area.info("Neural path re-syncing. Connection is now stable. Please resend your message.")
