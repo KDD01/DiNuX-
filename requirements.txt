@@ -1,3 +1,4 @@
 streamlit
 google-generativeai
-Pillow
+duckduckgo_search
+gTTS
