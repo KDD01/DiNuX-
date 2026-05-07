@@ -18,14 +18,14 @@ try:
 except Exception as e:
     st.error("API Connection Error")
 
-# --- 2. ADVANCED CSS (Clean UI & Sidebar Logic) ---
+# --- 2. ADVANCED CSS (Clean UI & Sidebar Detection) ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #030712; color: white; }
     
-    /* Branding Centering */
+    /* Branding */
     .header-container { text-align: center; margin-bottom: 30px; width: 100%; }
     .shining-title {
         font-size: clamp(30px, 10vw, 55px); font-weight: 900;
@@ -37,31 +37,38 @@ st.markdown("""
     .dev-text { color: #94a3b8; font-size: 15px; }
     .power-text { color: #3b82f6; font-size: 12px; font-weight: 700; text-transform: uppercase; }
 
-    /* Floating Menu Styling */
-    div[data-testid="stExpander"] {
-        position: fixed; top: 60px; left: 10px; z-index: 999999;
-        width: 55px !important; background-color: #1e293b !important;
-        border-radius: 12px !important; border: 1px solid #334155 !important;
-    }
-    
-    /* Remove Arrow & Upload Text */
-    details summary::-webkit-details-marker { display:none !important; }
-    details summary { list-style: none !important; }
-    .stFileUploader label { display: none !important; }
-    .stFileUploader section div { display: none !important; } /* Hides "200MB limit" text */
-    
-    /* Show Limit on Hover */
-    .stFileUploader:hover::after {
-        content: "Limit: 200MB"; position: absolute; left: 60px;
-        background: #334155; padding: 5px; border-radius: 5px; font-size: 10px;
-    }
-
-    /* Sidebar logic to hide floating menu */
-    [data-testid="stSidebar"][aria-expanded="true"] ~ section .floating-menu {
+    /* --- IMPORTANT: Floating Menu Styling & Sidebar Auto-Hide --- */
+    /* Sidebar එක open වුනාම floating-menu එක hide කරන CSS logic එක */
+    section[data-testid="stSidebar"][aria-expanded="true"] ~ section .floating-menu {
         display: none !important;
     }
     
-    section[data-testid="stSidebar"] { background-color: #080c14 !important; }
+    .floating-menu {
+        position: fixed; top: 60px; left: 10px; z-index: 999999;
+        width: 50px !important; transition: 0.3s ease;
+    }
+
+    div[data-testid="stExpander"] {
+        background-color: #1e293b !important;
+        border-radius: 10px !important;
+        border: 1px solid #334155 !important;
+        width: 50px !important;
+    }
+
+    /* Remove Arrow & Clean Icons */
+    details summary::-webkit-details-marker { display:none !important; }
+    details summary { list-style: none !important; text-align: center; }
+    details summary p { font-size: 20px !important; margin: 0 !important; color: #60a5fa; }
+    
+    /* File Uploader Clean Icon */
+    .stFileUploader label { display: none !important; }
+    .stFileUploader section div { display: none !important; }
+    .stFileUploader section { padding: 0 !important; min-height: 0 !important; }
+    
+    /* Custom icon size for professional look */
+    .icon-container { font-size: 18px; text-align: center; padding: 5px 0; }
+
+    section[data-testid="stSidebar"] { background-color: #080c14 !important; border-right: 1px solid #1e293b; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -80,18 +87,22 @@ with st.sidebar:
     **Name:** Dinush Dilhara  
     **Studio:** KDD Studio  
     **Role:** Lead AI Developer  
-    **Version:** 2.0.1 Pro
+    **Project:** DiNuX Pro AI
     """)
     
     if st.button("🗑️ Clear History"):
         st.session_state.messages = []
         st.rerun()
 
-# --- 4. FLOATING MENU (Auto-hide logic via CSS/Container) ---
+# --- 4. FLOATING MENU (With Auto-Hide logic) ---
+# Wrapping in a div for CSS targeting
 st.markdown('<div class="floating-menu">', unsafe_allow_html=True)
 with st.expander("☰", expanded=False):
+    # Professional Icon Only Uploader
     img_file = st.file_uploader("", type=["jpg", "png", "jpeg"], key="f_up")
-    st.markdown("<div style='text-align:center'>🎙️</div>", unsafe_allow_html=True)
+    
+    # Professional Mic Icon
+    st.markdown("<div class='icon-container'>🎙️</div>", unsafe_allow_html=True)
     voice_data = mic_recorder(start_prompt="●", stop_prompt="■", key='f_vc')
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -107,6 +118,7 @@ st.markdown(f'''
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Display Conversation
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -114,22 +126,22 @@ for message in st.session_state.messages:
 # --- 6. CHAT INPUT ---
 prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
-# --- 7. CORE BRAIN (Fixed Busy Error) ---
+# --- 7. STABLE CORE BRAIN ---
 if prompt or img_file or voice_data:
-    user_query = prompt if prompt else "Analyze this image."
+    user_query = prompt if prompt else "Analyze the attached file."
     if voice_data: user_query = "Voice Command Received."
     
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.markdown(user_query)
-        if img_file: st.image(img_file, width=280)
+        if img_file: st.image(img_file, width=300)
 
     with st.chat_message("assistant"):
         res_area = st.empty()
         full_res = ""
         try:
             model = genai.GenerativeModel(model_name=selected_model, safety_settings=safety_settings)
-            parts = ["You are DiNuX AI by Dinush Dilhara. Use friendly Sinhala.", user_query]
+            parts = ["You are DiNuX AI, a helpful assistant by Dinush Dilhara. Speak in Sinhala.", user_query]
             if img_file: parts.append(Image.open(img_file))
             
             response = model.generate_content(parts, stream=True)
@@ -140,4 +152,4 @@ if prompt or img_file or voice_data:
             res_area.markdown(full_res)
             st.session_state.messages.append({"role": "assistant", "content": full_res})
         except Exception:
-            st.error("නැවත උත්සාහ කරන්න (Brain Connection Refused)")
+            st.error("Brain Connection Error. Please try again.")
