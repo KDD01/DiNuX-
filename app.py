@@ -51,19 +51,28 @@ st.markdown("""
     .dev-text { color: #94a3b8; font-size: 16px; font-weight: 500; display: block; margin-top: 5px; }
     .power-text { color: #3b82f6; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; display: block; margin-top: 2px; }
 
-    /* Compact Merge Layout for Chat Bar */
-    .stChatInputContainer { padding-bottom: 10px !important; }
-    
     /* Sidebar Styling */
-    section[data-testid="stSidebar"] { background-color: #080c14 !important; }
+    section[data-testid="stSidebar"] { 
+        background-color: #080c14 !important; 
+        border-right: 1px solid #1e293b;
+    }
     
-    /* Small File Uploader Fix */
-    div[data-testid="stFileUploader"] section { padding: 0 !important; min-height: 0 !important; border: none !important; }
-    div[data-testid="stFileUploader"] label { display: none; }
+    /* Custom Sidebar Button Styling */
+    .stButton>button {
+        width: 100%;
+        border-radius: 10px;
+        background-color: #1e293b;
+        color: white;
+        border: 1px solid #334155;
+    }
+    .stButton>button:hover {
+        background-color: #3b82f6;
+        border-color: #60a5fa;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR ---
+# --- 3. SIDEBAR (Integrated Features) ---
 with st.sidebar:
     logo_path = "logo.png.png"
     if os.path.exists(logo_path):
@@ -71,11 +80,25 @@ with st.sidebar:
     else:
         st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=60)
     
-    st.title("DiNuX Settings")
-    selected_model = st.selectbox("Intelligence", ["gemini-1.5-flash", "gemini-1.5-pro"])
-    if st.button("🗑️ Clear Chat"):
+    st.title("DiNuX Menu")
+    st.markdown("---")
+    
+    # AI Intelligence Setting
+    selected_model = st.selectbox("Intelligence Level", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    
+    st.markdown("### 🛠️ Features")
+    # File/Image Option inside Menu
+    img_file = st.file_uploader("📷 Image/File Analysis", type=["jpg", "png", "jpeg"], key="side_img")
+    
+    # Voice Option inside Menu
+    st.write("🎙️ Voice Interaction")
+    voice_data = mic_recorder(start_prompt="Start Talking", stop_prompt="Stop & Send", key='side_voice')
+    
+    st.markdown("---")
+    if st.button("🗑️ Clear Chat History"):
         st.session_state.messages = []
         st.rerun()
+        
     st.caption("KDD Studio © 2026")
 
 # --- 4. CENTERED HEADER ---
@@ -90,31 +113,26 @@ st.markdown(f'''
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Displaying Chat Messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 5. MERGED CHAT BAR (Small & Compact Icons) ---
-# icons ටික chat input එකට උඩින් ඉතාම කුඩාවට එක පේළියට සැකසීම
-icon_col1, icon_col2, _ = st.columns([0.15, 0.2, 0.65])
-with icon_col1:
-    img_file = st.file_uploader("📷", type=["jpg", "png", "jpeg"], key="merged_img")
-with icon_col2:
-    voice_data = mic_recorder(start_prompt="🎤", stop_prompt="✔️", key='merged_voice')
-
+# --- 5. CLEAN CHAT BAR ---
 prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
 # --- 6. CORE LOGIC ---
 if prompt or img_file or voice_data:
-    user_query = prompt if prompt else "Analyze the content."
+    # Resolve user input source
+    user_query = prompt if prompt else "Analyze this content."
     if voice_data:
-        user_query = "Voice input received. (Responding in natural Sinhala...)"
+        user_query = "Voice input received. (Responding in spoken Sinhala...)"
     
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.markdown(user_query)
         if img_file:
-            st.image(img_file, width=200)
+            st.image(img_file, width=250, caption="Uploaded Data")
 
     with st.chat_message("assistant"):
         res_box = st.empty()
@@ -122,7 +140,7 @@ if prompt or img_file or voice_data:
         
         sys_msg = (
             "You are DiNuX AI by Dinush Dilhara. Talk in natural spoken Sri Lankan Sinhala. "
-            "Use 'oyaa/mama'. Be friendly and logical. Use search data if needed."
+            "Use 'oyaa/mama'. Be friendly, clever, and helpful. Use search data if needed."
         )
 
         try:
@@ -148,4 +166,4 @@ if prompt or img_file or voice_data:
             st.session_state.messages.append({"role": "assistant", "content": full_res})
 
         except Exception as e:
-            st.error("🔄 Connection busy. Try again in a moment.")
+            st.error("🔄 Connection busy. Trying to recover...")
