@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 from groq import Groq
 import time
+from PIL import Image
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -11,112 +12,101 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ADVANCED PROFESSIONAL CSS ---
+# --- 2. PREMIUM BLACK & GRAY UI (CSS) ---
 st.markdown("""
     <style>
-    /* Main Background Animation */
+    /* Main Background */
     .stApp {
-        background: radial-gradient(circle at top right, #1e293b, #0f172a);
-        color: #e2e8f0;
+        background-color: #000000;
+        color: #e5e7eb;
     }
 
-    /* Professional Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: rgba(15, 23, 42, 0.8);
-        backdrop-filter: blur(10px);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #0a0a0a !important;
+        border-right: 1px solid #1f2937;
     }
 
-    /* Chat Input Styling */
-    .stChatInputContainer {
-        padding: 20px;
-        background-color: transparent !important;
+    /* Round Logo Styling */
+    .logo-container {
+        display: flex;
+        justify-content: center;
+        padding: 20px 0;
     }
-    
-    .stChatInput input {
-        border-radius: 25px !important;
-        border: 1px solid #38bdf8 !important;
-        background-color: #1e293b !important;
-        color: white !important;
-    }
-
-    /* Glassmorphism Cards for Messages */
-    .stChatMessage {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(5px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 20px !important;
-        padding: 15px;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Buttons Style */
-    .stButton>button {
-        width: 100%;
-        border-radius: 12px;
-        background: linear-gradient(90deg, #0ea5e9, #2563eb);
-        color: white;
-        border: none;
-        transition: all 0.3s ease;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .stButton>button:hover {
-        transform: scale(1.02);
-        box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
-    }
-
-    /* Status Animations */
-    @keyframes pulse {
-        0% { opacity: 0.5; }
-        50% { opacity: 1; }
-        100% { opacity: 0.5; }
-    }
-    .status-dot {
-        height: 10px;
-        width: 10px;
-        background-color: #22c55e;
+    .logo-img {
+        width: 150px;
+        height: 150px;
         border-radius: 50%;
-        display: inline-block;
-        animation: pulse 2s infinite;
-        margin-right: 8px;
+        object-fit: cover;
+        border: 2px solid #3b82f6;
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
     }
 
-    /* Header Styling */
-    .main-title {
-        background: linear-gradient(to right, #38bdf8, #818cf8);
+    /* Chat Bubbles */
+    .stChatMessage {
+        background-color: #111827 !important;
+        border: 1px solid #1f2937 !important;
+        border-radius: 15px !important;
+        margin-bottom: 15px !important;
+    }
+
+    /* Input Box */
+    .stChatInput input {
+        background-color: #1f2937 !important;
+        color: white !important;
+        border: 1px solid #374151 !important;
+    }
+
+    /* Professional Text Gradient */
+    .title-text {
+        font-size: 40px;
+        font-weight: 800;
+        background: linear-gradient(to right, #ffffff, #9ca3af);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 3rem;
-        font-weight: 800;
         text-align: center;
-        margin-bottom: 0px;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 5px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #374151;
+        border-radius: 10px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. API LOADING ---
+# --- 3. API LOADING (FROM SECRETS) ---
 try:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
     GEMINI_KEYS = [st.secrets["GEMINI_KEY_1"], st.secrets["GEMINI_KEY_2"]]
 except Exception:
-    st.error("Secrets Configuration Missing! Please check Streamlit Cloud Settings.")
+    st.error("Secrets Configuration Missing! Please check Streamlit Settings.")
     st.stop()
 
-# --- 4. SMART ENGINE LOGIC ---
+# --- 4. SYSTEM PROMPT (SRI LANKAN FRIENDLY PERSONA) ---
+SYSTEM_PROMPT = """
+You are DiNuX AI, a brilliant and friendly Sri Lankan AI companion. 
+- Talk like a helpful friend (යාළුවෙක් වගේ).
+- Use natural, polite, and warm Sinhala. 
+- Instead of "මම ඔබට උදව් කරන්නේ කෙසේද?", use "මචං, මට පුළුවන් ඔයාට උදව් කරන්න. මොකක්ද වෙන්න ඕනේ?" or similar natural phrases.
+- If someone thanks you, say "අයියෝ ඕක මොකක්ද මල්ලි/මචං, ඕන වෙලාවක අහන්න!" 
+- Stay professional but very friendly. You were created by the legend Dinush Dilhara.
+"""
+
+# --- 5. SMART ENGINE LOGIC ---
 def get_ai_response(prompt):
     try:
         client = Groq(api_key=GROQ_API_KEY)
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "You are DiNuX AI, a helpful assistant by Dinush Dilhara. Use natural Sinhala/English."},
+                {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7,
+            temperature=0.8,
         )
         return completion.choices[0].message.content
     except Exception:
@@ -124,67 +114,64 @@ def get_ai_response(prompt):
             try:
                 genai.configure(api_key=key)
                 model = genai.GenerativeModel('gemini-1.5-flash')
-                response = model.generate_content(prompt)
+                response = model.generate_content(f"{SYSTEM_PROMPT}\nUser: {prompt}")
                 return response.text
             except Exception:
                 continue
-    return "සමාවෙන්න, මට මේ වෙලාවේ පිළිතුරු දීමට නොහැකියි."
+    return "සමාවෙන්න මචං, පොඩි line එකක් ගියා. ආයෙත් පාරක් අහන්නකෝ."
 
-# --- 5. SIDEBAR DESIGN ---
+# --- 6. SIDEBAR UI ---
 with st.sidebar:
-    st.markdown("## 💎 DiNuX AI Pro")
+    # Logo එක පෙන්වීම
+    try:
+        image = Image.open("logo.png")
+        st.image(image, use_container_width=True)
+    except:
+        st.markdown('<div style="text-align:center; color:gray;">(Logo not found in repo)</div>', unsafe_allow_html=True)
+
     st.markdown("---")
-    
-    # System Status Card
-    st.markdown(
-        f"""
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px;">
-            <p style="margin-bottom: 5px;"><span class="status-dot"></span> <b>System:</b> Online</p>
-            <p style="margin-bottom: 5px; font-size: 12px;"><b>Engine:</b> Hybrid Ultra-Fast</p>
-            <p style="margin-bottom: 0; font-size: 12px;"><b>Security:</b> AES Encrypted</p>
-        </div>
-        """, unsafe_allow_html=True
-    )
+    st.markdown("### 🤖 DiNuX AI Core")
+    st.write("Status: **Optimal** ⚡")
+    st.write("Mode: **Friendly Assistant**")
     
     st.markdown("---")
-    st.markdown("### 👨‍💻 Developer")
-    st.info("**Dinush Dilhara**\n\nFull-Stack Developer & AI Specialist")
+    st.markdown("### 👨‍💻 Creator")
+    st.success("**Dinush Dilhara**")
+    st.caption("Sri Lanka's Next-Gen AI Dev")
     
     st.markdown("---")
-    if st.button("🗑️ Clear History"):
+    if st.button("🗑️ Clear Memory"):
         st.session_state.messages = []
         st.rerun()
-    
-    st.markdown("<br><br><p style='text-align: center; color: #64748b; font-size: 10px;'>Version 5.0.1 Stable</p>", unsafe_allow_html=True)
 
-# --- 6. MAIN CHAT AREA ---
-st.markdown('<h1 class="main-title">DiNuX AI Infinity</h1>', unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #94a3b8;'>Experience the future of AI Assistant technology</p>", unsafe_allow_html=True)
+# --- 7. MAIN CHAT INTERFACE ---
+st.markdown('<h1 class="title-text">DiNuX AI Infinity Pro</h1>', unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #6b7280; margin-bottom: 30px;'>Think • Learn • Evolve</p>", unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display Messages
+# Display history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# User Input
-if prompt := st.chat_input("මොනවා හරි අහන්න..."):
+# User input
+if prompt := st.chat_input("මොනවා හරි අහන්න මචං..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        with st.spinner("Processing..."):
+        with st.spinner("හිතනවා..."):
             full_response = get_ai_response(prompt)
-            # Modern Typewriter Effect
+            # Smart Typing effect
             displayed_text = ""
             for char in full_response:
                 displayed_text += char
                 message_placeholder.markdown(displayed_text + "▌")
-                time.sleep(0.005) # ඉතා වේගවත් ටයිප් කිරීමේ ඉෆෙක්ට් එකක්
+                time.sleep(0.005)
             message_placeholder.markdown(full_response)
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
