@@ -22,7 +22,7 @@ try:
 except Exception as e:
     st.error(f"Setup Error: {e}")
 
-# --- 2. UI SETTINGS (Modern & Centered) ---
+# --- 2. UNIQUE UI SETTINGS (Custom Right Menu & Centered Branding) ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
 
 st.markdown("""
@@ -32,11 +32,12 @@ st.markdown("""
     /* Center Branding Text */
     .header-container {
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 40px;
         width: 100%;
+        padding-top: 20px;
     }
     .shining-title {
-        font-size: clamp(35px, 10vw, 55px);
+        font-size: clamp(35px, 10vw, 60px);
         font-weight: 900;
         background: linear-gradient(120deg, #ffffff 20%, #64748b 50%, #ffffff 80%);
         background-size: 200% auto;
@@ -48,63 +49,45 @@ st.markdown("""
     }
     @keyframes shine { to { background-position: 200% center; } }
     
-    .dev-text { color: #94a3b8; font-size: 16px; font-weight: 500; display: block; margin-top: 5px; }
-    .power-text { color: #3b82f6; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; display: block; margin-top: 2px; }
+    .dev-text { color: #94a3b8; font-size: 16px; font-weight: 500; display: block; margin-top: 8px; }
+    .power-text { color: #3b82f6; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; display: block; margin-top: 4px; }
 
-    /* Sidebar Background */
-    section[data-testid="stSidebar"] { 
-        background-color: #080c14 !important; 
-        border-right: 1px solid #1e293b;
-    }
-
-    /* Sidebar Feature Buttons Styling */
-    .feature-btn-container {
-        background: #111827;
-        padding: 15px;
-        border-radius: 12px;
-        border: 1px solid #1f2937;
-        margin-top: 10px;
+    /* Right Sidebar Style Simulation */
+    .stExpander {
+        border: 1px solid #1e293b !important;
+        background-color: #0f172a !important;
+        border-radius: 12px !important;
     }
     
-    /* Hide default uploader decorations */
-    div[data-testid="stFileUploader"] section { padding: 0 !important; min-height: 0 !important; }
+    /* Sidebar Text Fix */
+    section[data-testid="stSidebar"] { background-color: #080c14 !important; border-right: 1px solid #1e293b; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (With Separate Feature Buttons) ---
+# --- 3. LEFT SIDEBAR (Standard Settings) ---
 with st.sidebar:
     logo_path = "logo.png.png"
     if os.path.exists(logo_path):
         st.image(logo_path, use_container_width=True)
-    else:
-        st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=60)
-    
-    st.title("DiNuX Settings")
-    selected_model = st.selectbox("Model", ["gemini-1.5-flash", "gemini-1.5-pro"])
-    
-    st.markdown("---")
-    
-    # --- SEPARATE FEATURE BUTTONS SECTION ---
-    st.subheader("🚀 Features")
-    
-    # Feature 1: Image Analysis Button
-    st.write("📸 **Image Analysis**")
-    img_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"], key="btn_img", label_visibility="collapsed")
-    
-    st.write("") # Spacer
-
-    # Feature 2: Voice Interaction Button
-    st.write("🎙️ **Voice Command**")
-    voice_data = mic_recorder(start_prompt="🎤 Start", stop_prompt="✔️ Send", key='btn_voice')
-    
-    st.markdown("---")
-    if st.button("🗑️ Clear Chat History"):
+    st.title("Settings")
+    selected_model = st.selectbox("Intelligence Level", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    if st.button("🗑️ Clear Conversation"):
         st.session_state.messages = []
         st.rerun()
-        
-    st.caption("KDD Studio © 2026")
+    st.caption("Admin: Dinush Dilhara")
 
-# --- 4. CENTERED HEADER ---
+# --- 4. RIGHT SIDE MENU (☰ Features) ---
+# පිටුවේ දකුණු පැත්තේ Features පෙන්වීමට Expander එකක් භාවිතා කිරීම
+with st.container():
+    col_empty, col_menu = st.columns([0.7, 0.3])
+    with col_menu:
+        with st.expander("☰ Features"):
+            st.markdown("### 🛠️ Tools")
+            img_file = st.file_uploader("Upload Image/File", type=["jpg", "png", "jpeg"], key="r_upload", label_visibility="collapsed")
+            st.write("🎙️ Voice Command")
+            voice_data = mic_recorder(start_prompt="🎤 Start", stop_prompt="✔️ Send", key='r_voice')
+
+# --- 5. CENTERED HEADER ---
 st.markdown(f'''
     <div class="header-container">
         <h1 class="shining-title">DiNuX AI</h1>
@@ -116,24 +99,25 @@ st.markdown(f'''
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Display Messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 5. CLEAN CHAT BAR ---
+# --- 6. CHAT INPUT ---
 prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
-# --- 6. CORE LOGIC ---
+# --- 7. CORE LOGIC ---
 if prompt or img_file or voice_data:
     user_query = prompt if prompt else "Analyze the attached content."
     if voice_data:
-        user_query = "Voice input received. (Transcribing voice...)"
+        user_query = "Voice input received. (Responding in natural Sinhala...)"
     
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.markdown(user_query)
         if img_file:
-            st.image(img_file, width=250, caption="Attached File")
+            st.image(img_file, width=300, caption="Uploaded Content")
 
     with st.chat_message("assistant"):
         res_box = st.empty()
@@ -141,13 +125,13 @@ if prompt or img_file or voice_data:
         
         sys_msg = (
             "You are DiNuX AI by Dinush Dilhara. Talk in natural spoken Sri Lankan Sinhala. "
-            "Use 'oyaa/mama'. Be friendly, clever, and helpful. Use search data if needed."
+            "Use 'oyaa/mama'. Be friendly and professional. Use search data if needed."
         )
 
         try:
             search_context = ""
             if prompt and any(k in prompt.lower() for k in ["news", "today", "දැන්", "price", "weather"]):
-                search_context = f"\n\n[Live Info]: {search_tool.run(prompt)}"
+                search_context = f"\n\n[Live Data]: {search_tool.run(prompt)}"
 
             model = genai.GenerativeModel(model_name=selected_model, safety_settings=safety_settings)
             inputs = [sys_msg + search_context + user_query]
@@ -160,8 +144,7 @@ if prompt or img_file or voice_data:
                     if chunk.text:
                         full_res += chunk.text
                         res_box.markdown(full_res + "▌")
-                except:
-                    continue
+                except: continue
             
             res_box.markdown(full_res)
             st.session_state.messages.append({"role": "assistant", "content": full_res})
