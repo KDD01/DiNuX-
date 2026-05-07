@@ -4,7 +4,7 @@ from PIL import Image
 import time
 
 # =========================================================
-# DiNuX AI PRO - ULTRA STABLE VERSION
+# DiNuX AI PRO - FINAL STABLE VERSION
 # =========================================================
 
 # ---------------- API KEY ----------------
@@ -65,17 +65,38 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- CONFIGURE GEMINI ----------------
+# ---------------- GEMINI CONFIG ----------------
 genai.configure(api_key=API_KEY)
 
-# ---------------- GET MODEL ----------------
+# ---------------- SAFETY SETTINGS ----------------
+safety_settings = [
+    {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_NONE"
+    }
+]
+
+# ---------------- LOAD MODEL ----------------
 @st.cache_resource
 def load_model():
 
-    # MOST STABLE MODEL
-    model_name = "gemini-1.5-flash"
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash"
+    )
 
-    return genai.GenerativeModel(model_name)
+    return model
 
 # ---------------- SESSION ----------------
 if "messages" not in st.session_state:
@@ -125,7 +146,7 @@ for msg in st.session_state.messages:
 prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
 
 # =========================================================
-# MAIN CHAT SYSTEM
+# MAIN AI SYSTEM
 # =========================================================
 
 if prompt:
@@ -143,8 +164,8 @@ if prompt:
     # ASSISTANT RESPONSE
     with st.chat_message("assistant"):
 
-        thinking = st.empty()
-        thinking.markdown("⏳ Thinking...")
+        loading = st.empty()
+        loading.markdown("⏳ Thinking...")
 
         try:
 
@@ -153,10 +174,10 @@ if prompt:
             # ---------------- PAYLOAD ----------------
             payload = []
 
-            # USER PROMPT
+            # ADD USER TEXT
             payload.append(prompt)
 
-            # IMAGE SUPPORT
+            # ADD IMAGE IF EXISTS
             if uploaded_image is not None:
 
                 image = Image.open(uploaded_image)
@@ -172,12 +193,15 @@ if prompt:
 
                     response = model.generate_content(
                         payload,
+
                         generation_config={
                             "temperature": 0.7,
                             "top_p": 1,
                             "top_k": 1,
                             "max_output_tokens": 2048
-                        }
+                        },
+
+                        safety_settings=safety_settings
                     )
 
                     break
@@ -186,12 +210,37 @@ if prompt:
 
                     time.sleep(2)
 
-            # ---------------- RESPONSE CHECK ----------------
-            if response and hasattr(response, "text"):
+            # ---------------- RESPONSE READER ----------------
+            loading.empty()
 
-                answer = response.text
+            answer = ""
 
-                thinking.empty()
+            try:
+
+                # NORMAL TEXT
+                if hasattr(response, "text") and response.text:
+
+                    answer = response.text
+
+                # ALTERNATIVE RESPONSE FORMAT
+                elif response.candidates:
+
+                    for candidate in response.candidates:
+
+                        if candidate.content.parts:
+
+                            for part in candidate.content.parts:
+
+                                if hasattr(part, "text"):
+
+                                    answer += part.text
+
+            except Exception as e:
+
+                answer = f"Response Error: {str(e)}"
+
+            # ---------------- FINAL OUTPUT ----------------
+            if answer.strip() != "":
 
                 st.markdown(answer)
 
@@ -202,15 +251,13 @@ if prompt:
 
             else:
 
-                thinking.empty()
-
-                st.error("⚠️ No response received. Please try again.")
+                st.warning("⚠️ Empty response received. Please resend.")
 
         except Exception as e:
 
-            thinking.empty()
+            loading.empty()
 
-            st.error(f"⚠️ Error: {str(e)}")
+            st.error(f"⚠️ System Error: {str(e)}")
 
 # ---------------- FOOTER ----------------
 st.markdown("""
