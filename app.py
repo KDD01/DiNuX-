@@ -2,171 +2,150 @@ import streamlit as st
 import google.generativeai as genai
 import os
 from PIL import Image
-from streamlit_mic_recorder import mic_recorder
+import plotly.graph_objects as go
 
 # --- 1. CONFIGURATION ---
 GEMINI_API_KEY = "AIzaSyBtKQ9XAelwCGDC6uD3UgEJzLC5bMM5FxQ" 
+genai.configure(api_key=GEMINI_API_KEY)
 
-try:
-    genai.configure(api_key=GEMINI_API_KEY)
-    safety_settings = [
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-    ]
-except Exception as e:
-    st.error("API Connection Error")
-
-# --- 2. ADVANCED CSS (Clean UI & Sidebar Detection) ---
-st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
+# --- 2. ADVANCED UI DESIGN (IMAGE BASED) ---
+st.set_page_config(page_title="DiNuX ai - Intelligence Hub", layout="wide")
 
 st.markdown("""
     <style>
-    /* Main Background */
-    .stApp { background-color: #030712; color: white; }
+    /* Global Styles */
+    .stApp { background-color: #0b0e14; color: #e2e8f0; font-family: 'Inter', sans-serif; }
     
-    /* Branding Header */
-    .header-container { text-align: center; margin-bottom: 30px; width: 100%; }
-    .shining-title {
-        font-size: clamp(35px, 10vw, 55px); font-weight: 900;
-        background: linear-gradient(120deg, #ffffff 20%, #64748b 50%, #ffffff 80%);
-        background-size: 200% auto; -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent; animation: shine 3s linear infinite;
-        margin: 0;
-    }
-    @keyframes shine { to { background-position: 200% center; } }
-    .dev-text { color: #94a3b8; font-size: 15px; font-weight: 500; }
-    .power-text { color: #3b82f6; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
-
-    /* --- Floating Menu Styling & Sidebar Sync --- */
-    /* Sidebar එක ඇරිලා තියෙන වෙලාවට Floating menu එක hide කරන magic code එක */
-    section[data-testid="stSidebar"][aria-expanded="true"] ~ section .floating-menu {
-        display: none !important;
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #111827 !important;
+        border-right: 1px solid #1f2937;
+        width: 260px !important;
     }
 
-    .floating-menu {
-        position: fixed; top: 60px; left: 10px; z-index: 999999;
-        width: 50px !important; transition: 0.3s ease;
+    /* Glassmorphism Cards */
+    .card {
+        background: rgba(31, 41, 55, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        backdrop-filter: blur(10px);
     }
+    
+    .status-active { color: #10b981; font-size: 12px; font-weight: bold; }
+    .status-training { color: #3b82f6; font-size: 12px; font-weight: bold; }
 
-    div[data-testid="stExpander"] {
-        background-color: #1e293b !important;
+    /* Custom Chat Input */
+    .stChatInputContainer {
+        background-color: #1f2937 !important;
         border-radius: 12px !important;
-        border: 1px solid #334155 !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        border: 1px solid #374151 !important;
     }
 
-    /* Clean Icon (Remove Arrows/Text) */
-    details summary::-webkit-details-marker { display:none !important; }
-    details summary { list-style: none !important; text-align: center; }
-    details summary p { font-size: 22px !important; margin: 0 !important; color: #60a5fa; }
-    
-    /* File Uploader Clean Icon */
-    .stFileUploader label { display: none !important; }
-    .stFileUploader section div { display: none !important; }
-    .stFileUploader section { 
-        padding: 0 !important; 
-        min-height: 0 !important; 
-        background: transparent !important;
-        border: none !important;
+    /* Custom Button Style */
+    .stButton>button {
+        background: linear-gradient(90deg, #3b82f6, #2563eb);
+        color: white;
+        border-radius: 8px;
+        border: none;
+        width: 100%;
     }
-    
-    /* Custom icon alignment */
-    .icon-container { font-size: 20px; text-align: center; padding: 8px 0; cursor: pointer; }
 
-    /* Sidebar Custom Colors */
-    section[data-testid="stSidebar"] { 
-        background-color: #080c14 !important; 
-        border-right: 1px solid #1e293b; 
-    }
+    /* Hide Streamlit Branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (Settings & About) ---
+# --- 3. SIDEBAR NAVIGATION ---
 with st.sidebar:
-    logo_path = "logo.png.png"
-    if os.path.exists(logo_path):
-        st.image(logo_path, use_container_width=True)
-    
-    st.title("Main Menu")
-    selected_model = st.selectbox("Intelligence Level", ["gemini-1.5-flash", "gemini-1.5-pro"])
-    
-    st.markdown("---")
-    st.subheader("👤 About Developer")
-    st.info("""
-    **Developer:** Dinush Dilhara  
-    **Studio:** KDD Studio  
-    **Project:** DiNuX AI Pro v2.0
-    """)
-    
-    if st.button("🗑️ Clear Conversation"):
-        st.session_state.messages = []
-        st.rerun()
+    st.markdown("<h2 style='color:white;'>🧬 DiNuX <span style='color:#3b82f6;'>ai</span></h2>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:12px; color:#9ca3af;'>Intelligence Hub</p>", unsafe_allow_html=True)
+    st.write("---")
+    st.button("🏠 Dashboard")
+    st.button("📂 Projects")
+    st.button("🤖 AI Models")
+    st.button("📊 Analytics")
+    st.button("⚙️ Settings")
+    st.write("---")
+    st.caption("Admin: Dinush Dilhara")
 
-# --- 4. FLOATING MENU (Features) ---
-# මෙම කොටස CSS මගින් පාලනය වේ
-st.markdown('<div class="floating-menu">', unsafe_allow_html=True)
-with st.expander("☰", expanded=False):
-    # Image Upload Icon
-    img_file = st.file_uploader("", type=["jpg", "png", "jpeg"], key="f_up")
-    
-    # Mic Icon Alignment
-    st.markdown("<div class='icon-container'>🎙️</div>", unsafe_allow_html=True)
-    voice_data = mic_recorder(start_prompt="●", stop_prompt="■", key='f_vc')
-st.markdown('</div>', unsafe_allow_html=True)
+# --- 4. MAIN LAYOUT (Three Columns like Image) ---
+col1, col2, col3 = st.columns([1.2, 2, 1], gap="medium")
 
-# --- 5. HEADER SECTION ---
-st.markdown(f'''
-    <div class="header-container">
-        <h1 class="shining-title">DiNuX AI</h1>
-        <span class="dev-text">Developed by Dinush Dilhara</span><br>
-        <span class="power-text">POWERED BY KDD STUDIO</span>
+# --- COLUMN 1: PROJECT OVERVIEW ---
+with col1:
+    st.markdown("### Project Overview")
+    
+    # Card 1
+    with st.container():
+        st.markdown("""
+        <div class="card">
+            <p style='margin:0; font-weight:bold;'>Insight Engine v7</p>
+            <span class="status-active">● Active</span>
+            <h2 style='text-align:center; color:#10b981;'>80%</h2>
+            <p style='font-size:11px; text-align:center; color:#9ca3af;'>Accuracy 55%</p>
+        </div>
+        """, unsafe_allow_html=True)
+        st.button("Open Chat", key="btn1")
+
+    # Card 2
+    with st.container():
+        st.markdown("""
+        <div class="card">
+            <p style='margin:0; font-weight:bold;'>NLP Sentiment Bot</p>
+            <span class="status-training">● Training</span>
+            <h2 style='text-align:center; color:#3b82f6;'>90%</h2>
+            <p style='font-size:11px; text-align:center; color:#9ca3af;'>Accuracy 95%</p>
+        </div>
+        """, unsafe_allow_html=True)
+        st.button("Settings", key="btn2")
+
+# --- COLUMN 2: LIVE COLLABORATION & CHAT ---
+with col2:
+    st.markdown("### Live Collaboration & Chat")
+    
+    chat_container = st.container(height=500, border=True)
+    with chat_container:
+        st.chat_message("user").write("How do we generate AI Insight Engine for DiNuX AI?")
+        st.chat_message("assistant").write("Here is the architectural overview for the DiNuX Insight Engine. You can retrain the model using the provided data studio link.")
+        st.code("""def predict(data):
+    return model.predict(data)""", language="python")
+
+    prompt = st.chat_input("Command DiNuX... or select a suggested action")
+
+# --- COLUMN 3: METRICS & HISTORY ---
+with col3:
+    st.markdown("### Active Model Metrics")
+    
+    # Mini Chart using Plotly
+    fig = go.Figure(go.Scatter(y=[10, 45, 30, 80, 95], mode='lines', line=dict(color='#3b82f6', width=3)))
+    fig.update_layout(margin=dict(l=0,r=0,t=0,b=0), height=150, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False)
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False)
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("""
+    <div class="card">
+        <p style='font-size:13px; font-weight:bold;'>Chat History</p>
+        <p style='font-size:12px; color:#9ca3af;'>● Session list 1</p>
+        <p style='font-size:12px; color:#3b82f6;'>● Session list 2 (Active)</p>
+        <p style='font-size:12px; color:#9ca3af;'>● Session list 3</p>
     </div>
-    ''', unsafe_allow_html=True)
-
-# Initialize Chat History
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# Display Messages
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# --- 6. CHAT INPUT ---
-prompt = st.chat_input("DiNuX සමඟ කතා කරන්න...")
-
-# --- 7. LOGIC & RESPONSE ---
-if prompt or img_file or voice_data:
-    user_query = prompt if prompt else "Analyze the attached content."
-    if voice_data: user_query = "Voice Command Received."
+    """, unsafe_allow_html=True)
     
-    # Add user message to history
-    st.session_state.messages.append({"role": "user", "content": user_query})
-    with st.chat_message("user"):
-        st.markdown(user_query)
-        if img_file: st.image(img_file, width=300)
+    st.markdown("""
+    <div class="card" style='background: linear-gradient(135deg, #1e3a8a, #1e293b);'>
+        <p style='font-size:12px;'><b>Usage Metrics</b></p>
+        <p style='font-size:10px;'>CPU: 45% | GPU: 88%</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Assistant Response
-    with st.chat_message("assistant"):
-        res_area = st.empty()
-        full_res = ""
-        try:
-            model = genai.GenerativeModel(model_name=selected_model, safety_settings=safety_settings)
-            
-            # Message formatting
-            system_instruction = "You are DiNuX AI, a smart assistant developed by Dinush Dilhara. Use friendly spoken Sinhala."
-            input_data = [system_instruction, user_query]
-            if img_file: input_data.append(Image.open(img_file))
-            
-            response = model.generate_content(input_data, stream=True)
-            for chunk in response:
-                if chunk.text:
-                    full_res += chunk.text
-                    res_area.markdown(full_res + "▌")
-            
-            res_area.markdown(full_res)
-            st.session_state.messages.append({"role": "assistant", "content": full_res})
-        except Exception as e:
-            st.error("Error: Could not connect to DiNuX Brain.")
+# --- 5. CHAT LOGIC ---
+if prompt:
+    with col2:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
+        st.chat_message("assistant").write(response.text)
