@@ -4,20 +4,16 @@ import os
 from PIL import Image
 import time
 
-# --- 1. CONFIGURATION & BRAIN SETUP ---
-GEMINI_API_KEY = "AIzaSyBtKQ9XAelwCGDC6uD3UgEJzLC5bMM5FxQ" 
-
-# AI එක configure කිරීම සහ Error Handling
-def configure_ai():
+# --- 1. INITIALIZATION (පද්ධතිය මුලින්ම සූදානම් කිරීම) ---
+if "api_configured" not in st.session_state:
+    GEMINI_API_KEY = "AIzaSyBtKQ9XAelwCGDC6uD3UgEJzLC5bMM5FxQ"
     try:
         genai.configure(api_key=GEMINI_API_KEY)
-        return True
+        st.session_state.api_configured = True
     except Exception:
-        return False
+        st.session_state.api_configured = False
 
-configure_ai()
-
-# --- 2. ADVANCED CSS (Smart UI) ---
+# --- 2. ADVANCED UI STYLING (CSS) ---
 st.set_page_config(page_title="DiNuX ai Pro", layout="wide", page_icon="🧬")
 
 st.markdown("""
@@ -34,7 +30,7 @@ st.markdown("""
     .power-text { font-size: 10px; color: #3b82f6; letter-spacing: 2px; font-weight: bold; text-transform: uppercase; }
     @keyframes shine { to { background-position: 200% center; } }
 
-    /* Control Panel UI */
+    /* Control Panel Box */
     .control-panel-box {
         background: rgba(22, 27, 34, 0.95);
         border: 1px solid #30363d;
@@ -48,10 +44,13 @@ st.markdown("""
         border-top: 1px solid #30363d; text-align: center; z-index: 998;
     }
     .copyright { font-size: 10px; color: #8b949e; }
+    
+    /* Clean Chat Messages */
+    .stChatMessage { border-radius: 12px; margin-bottom: 10px; border: 1px solid rgba(48, 54, 61, 0.2); }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR ---
+# --- 3. SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.markdown("<h2 style='color:#58a6ff;'>🧬 DiNuX AI</h2>", unsafe_allow_html=True)
     st.info("**Developer:** Dinush Dilhara\n\n**Studio:** KDD STUDIO")
@@ -61,9 +60,10 @@ with st.sidebar:
     
     if st.button("⚙️ Control Center"):
         st.session_state.show_control = not st.session_state.show_control
+        st.rerun()
     
     st.write("---")
-    if st.button("🗑️ Clear Chat"):
+    if st.button("🗑️ Clear History"):
         st.session_state.messages = []
         st.rerun()
 
@@ -75,7 +75,7 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- 5. CONTROL CENTER (Independent Dialogue) ---
+# --- 5. CONTROL CENTER LOGIC ---
 if st.session_state.show_control:
     with st.container():
         st.markdown('<div class="control-panel-box">', unsafe_allow_html=True)
@@ -88,20 +88,23 @@ if st.session_state.show_control:
         
         c1, c2 = st.columns(2)
         with c1:
-            selected_model = st.selectbox("Neural Core", ["gemini-1.5-flash", "gemini-1.5-pro"])
+            st.session_state.selected_model = st.selectbox("Neural Core", ["gemini-1.5-flash", "gemini-1.5-pro"])
         with c2:
-            uploaded_file = st.file_uploader("Vision Source", type=["png", "jpg", "jpeg"])
+            st.session_state.uploaded_file = st.file_uploader("Vision Source", type=["png", "jpg", "jpeg"])
         st.markdown('</div>', unsafe_allow_html=True)
-else:
-    selected_model = "gemini-1.5-flash"
-    uploaded_file = None
 
-# --- 6. CHAT INTERFACE ---
+# Default values if not set
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = "gemini-1.5-flash"
+if "uploaded_file" not in st.session_state:
+    st.session_state.uploaded_file = None
+
+# --- 6. CHAT HISTORY DISPLAY ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-chat_placeholder = st.container()
-with chat_placeholder:
+chat_display = st.container()
+with chat_display:
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -116,32 +119,38 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- 8. SMART BRAIN WITH AUTO-RETRY LOGIC ---
+# --- 8. BULLETPROOF BRAIN LOGIC (The Fix) ---
 if prompt:
+    # Save User Message
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with chat_placeholder:
+    with chat_display:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-    with chat_placeholder:
+    # Generate Assistant Response
+    with chat_display:
         with st.chat_message("assistant"):
             response_area = st.empty()
             full_response = ""
             
-            # පද්ධතියේ දෝෂයක් ආවොත් 3 වතාවක් auto-retry කරන්න හදපු logic එක
-            retry_count = 0
+            # Retry Mechanism with Exception Capture
             success = False
-            
-            while retry_count < 3 and not success:
+            for attempt in range(3):
                 try:
-                    model = genai.GenerativeModel(model_name=selected_model)
-                    instruction = "You are DiNuX AI by Dinush Dilhara. Use friendly Sinhala."
+                    if not st.session_state.api_configured:
+                        genai.configure(api_key="AIzaSyBtKQ9XAelwCGDC6uD3UgEJzLC5bMM5FxQ")
                     
-                    contents = [instruction, prompt]
-                    if uploaded_file:
-                        contents.append(Image.open(uploaded_file))
+                    model = genai.GenerativeModel(model_name=st.session_state.selected_model)
+                    
+                    # Prepare content
+                    sys_msg = "You are DiNuX AI by Dinush Dilhara. Speak in friendly Sinhala."
+                    content_parts = [sys_msg, prompt]
+                    
+                    if st.session_state.uploaded_file:
+                        content_parts.append(Image.open(st.session_state.uploaded_file))
 
-                    response = model.generate_content(contents, stream=True)
+                    # Start generation
+                    response = model.generate_content(content_parts, stream=True)
                     
                     for chunk in response:
                         if chunk.text:
@@ -150,12 +159,13 @@ if prompt:
                     
                     response_area.markdown(full_response)
                     st.session_state.messages.append({"role": "assistant", "content": full_response})
-                    success = True # සාර්ථක වුනොත් loop එක නවත්වන්න
-                    
+                    success = True
+                    break # සාර්ථක නම් loop එකෙන් ඉවත් වන්න
+                
                 except Exception as e:
-                    retry_count += 1
-                    response_area.warning(f"Reconnecting to Brain... (Attempt {retry_count}/3)")
-                    time.sleep(2) # තත්පර 2ක් ඉඳලා ආයේ try කරන්න
-                    
+                    time.sleep(1.5) # තත්පර 1.5 ක් ඉන්න
+                    if attempt == 2:
+                        st.error("Brain Connection unstable. Please check your internet or API key.")
+            
             if not success:
-                st.error("Brain Connection Permanently Failed. Please refresh the page.")
+                st.info("System is ready for next input. You can try messaging again.")
