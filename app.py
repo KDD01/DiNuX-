@@ -9,39 +9,26 @@ TAVILY_API_KEY = "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"
 
 try:
     client = Groq(api_key=GROQ_API_KEY)
-    # AI එකට Google Search කිරීමේ හැකියාව ලබා දෙන Tool එක
     search_tool = TavilySearchResults(tavily_api_key=TAVILY_API_KEY)
 except Exception as e:
     st.error(f"Setup Error: {e}")
 
-# --- 2. UI SETTINGS (Dinush's Custom CSS) ---
+# --- 2. UI SETTINGS ---
 st.set_page_config(page_title="DiNuX AI", page_icon="🤖", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #030712; color: white; }
-    
     .shining-title {
-        color: #ffffff;
-        font-size: 42px;
-        font-weight: 800;
-        text-align: center;
+        color: #ffffff; font-size: 42px; font-weight: 800; text-align: center;
         background: linear-gradient(120deg, #ffffff 30%, #666666 50%, #ffffff 70%);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shine 3s linear infinite;
-        margin-bottom: 2px;
-        line-height: 1.2;
+        background-size: 200% auto; -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent; animation: shine 3s linear infinite;
+        margin-bottom: 2px; line-height: 1.2;
     }
-
     @keyframes shine { to { background-position: 200% center; } }
-    
     .caption-text { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 14px; }
-    
-    section[data-testid="stSidebar"] {
-        background-color: #080c14;
-    }
+    section[data-testid="stSidebar"] { background-color: #080c14; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -52,7 +39,6 @@ with st.sidebar:
         st.image(logo_path, use_container_width=True)
     else:
         st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=80)
-        st.warning("logo.png.png file එක GitHub එකට දාන්න.")
         
     st.title("DiNuX Menu")
     st.markdown("---")
@@ -63,20 +49,14 @@ with st.sidebar:
         ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"],
         index=0
     )
-    
     temp_val = st.slider("Creativity (Temperature)", 0.0, 1.0, 0.7)
     
-    st.markdown("---")
-    
-    st.subheader("🛠️ Options")
     if st.button("🗑️ Clear Conversation"):
         st.session_state.messages = []
         st.rerun()
         
     st.markdown("---")
-    
     st.subheader("🚀 KDD Studio")
-    st.info("DiNuX AI is a high-performance assistant developed for advanced logical reasoning.")
     st.caption("© 2026 KDD Studio | Dinush Dilhara")
 
 # --- 4. MAIN INTERFACE ---
@@ -90,7 +70,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 5. CHAT LOGIC ---
+# --- 5. CHAT LOGIC WITH AUTO-ERROR FIXING ---
 if prompt := st.chat_input("DiNuX සමඟ කතා කරන්න..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -100,53 +80,55 @@ if prompt := st.chat_input("DiNuX සමඟ කතා කරන්න..."):
         response_placeholder = st.empty()
         full_response = ""
         
-        # AI Behavior & Instructions
         system_instructions = (
-            "You are DiNuX AI, a highly logical and friendly assistant created by Dinush Dilhara. "
-            "Your personality is warm and helpful. "
-            "CORE RULES: "
-            "1. LOGIC: Always provide accurate, step-by-step reasoning. "
-            "2. REAL-TIME: Use the provided web context to answer questions about current events or news. "
-            "3. PERSONA: If the user asks you to be a girlfriend/boyfriend, switch to a supportive and loving tone while remaining intelligent. "
-            "4. ERROR FIXING: If you detect a mistake in your logic, correct it before finalizing the answer."
+            "You are DiNuX AI, created by Dinush Dilhara. Logical, friendly, and real-time capable. "
+            "If asked to be a partner (GF/BF), adapt to that persona lovingly. "
+            "Use search context if provided."
         )
 
-        try:
-            # සැබෑ කාලීන තොරතුරු අවශ්‍ය දැයි පරීක්ෂා කිරීම (Search Trigger)
-            search_context = ""
-            keywords = ["news", "today", "අද", "දැන්", "current", "weather", "match", "latest", "time"]
-            if any(word in prompt.lower() for word in keywords):
-                try:
-                    search_results = search_tool.run(prompt)
-                    search_context = f"\n\n[WEB SEARCH CONTEXT]: {search_results}"
-                except:
-                    search_context = "\n\n(Note: Tried searching live web but connection was slow. Using internal knowledge.)"
+        # 1. Search Logic
+        search_context = ""
+        if any(word in prompt.lower() for word in ["news", "today", "අද", "දැන්", "match", "latest"]):
+            try:
+                search_results = search_tool.run(prompt)
+                search_context = f"\n\n[Real-time Data]: {search_results}"
+            except:
+                pass
 
-            # Chat History එක සහ System Prompt එක එකතු කිරීම
-            chat_history = [
-                {"role": "system", "content": system_instructions + search_context}
-            ]
-            # අන්තිම message 10ක් මතක තබා ගනී
-            chat_history.extend(st.session_state.messages[-10:]) 
-            
-            # Groq API එක හරහා පිළිතුර ලබා ගැනීම
-            completion = client.chat.completions.create(
-                model=selected_model,
+        # 2. API Call with Fallback Logic (Error Fixer)
+        def get_ai_response(model_to_use):
+            chat_history = [{"role": "system", "content": system_instructions + search_context}]
+            chat_history.extend(st.session_state.messages[-10:])
+            return client.chat.completions.create(
+                model=model_to_use,
                 messages=chat_history,
                 temperature=temp_val,
                 stream=True,
             )
-            
+
+        try:
+            # මුලින්ම ඔයා තෝරපු model එකෙන් උත්සාහ කරයි
+            completion = get_ai_response(selected_model)
             for chunk in completion:
                 if chunk.choices[0].delta.content:
                     full_response += chunk.choices[0].delta.content
                     response_placeholder.markdown(full_response + "▌")
-            
-            response_placeholder.markdown(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
-            
+        
         except Exception as e:
-            # වැරදි ආවොත් ඒවා user ට නොපෙන්වා ලස්සනට හසුරුවයි
-            error_friendly = "සමාවෙන්න Dinush, පොඩි error එකක් ආවා. මම ඒක fix කරගන්න ගමන් ඉන්නේ. ඔයාට පුළුවන්ද ආයෙත් ඒක අහන්න?"
-            st.error(f"Internal Logic Error: {e}")
-            st.session_state.messages.append({"role": "assistant", "content": error_friendly})
+            # 429 Error එක (Rate Limit) ආවොත්, ස්වයංක්‍රීයව ලොකු model එකක ඉඳන් කුඩා එකකට මාරු වෙයි
+            if "429" in str(e):
+                st.warning("Main model limit reached. Switching to Backup model... 🔄")
+                try:
+                    # Backup Model එක (llama-3.1-8b-instant) - මේකේ limit වැඩියි
+                    completion = get_ai_response("llama-3.1-8b-instant")
+                    for chunk in completion:
+                        if chunk.choices[0].delta.content:
+                            full_response += chunk.choices[0].delta.content
+                            response_placeholder.markdown(full_response + "▌")
+                except Exception as e2:
+                    st.error("All models are currently busy. Please wait a moment.")
+            else:
+                st.error(f"Logic Error: {e}")
+
+        response_placeholder.markdown(full_response)
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
