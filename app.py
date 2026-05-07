@@ -5,71 +5,65 @@ import time
 # --- PAGE SETUP ---
 st.set_page_config(page_title="DiNuX AI Pro", page_icon="🤖", layout="wide")
 
-# --- API & MODEL CONFIG ---
+# --- API CONFIG ---
 API_KEY = "AIzaSyCSIbVlIY0_CJe1rfFqh6l4lZoeAGlCGpU"
 genai.configure(api_key=API_KEY)
 
-# Error එක මඟහැරීමට model එක නිවැරදිව අර්ථ දැක්වීම
-MODEL_NAME = 'gemini-1.5-flash'
-model = genai.GenerativeModel(MODEL_NAME)
-
-# --- AUTO-FIX LOGIC (Bugs fix කරමින් දිගටම වැඩ කිරීමට) ---
-def safe_generate_content(prompt):
-    max_retries = 3
-    for attempt in range(max_retries):
+# --- AUTO-FIX & SMART MODEL SELECTOR ---
+# එක model එකක් error ආවොත් අනිත් එක පාවිච්චි කරන ලොජික් එක
+def get_ai_response(prompt):
+    # උත්සාහ කරන Models ලැයිස්තුව
+    models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+    
+    for model_name in models_to_try:
         try:
+            model = genai.GenerativeModel(model_name)
             response = model.generate_content(prompt)
             return response.text
         except Exception as e:
-            if attempt < max_retries - 1:
-                time.sleep(2)  # තත්පර 2ක් ඉඳලා නැවත උත්සාහ කරයි
-                continue
-            else:
-                return f"සමාවෙන්න, පද්ධතියේ ඇතිවූ දෝෂයක් නිසා මට පිළිතුරු දීමට නොහැකි විය: {str(e)}"
+            # මේ model එක වැඩ නැත්නම් ඊළඟ එකට යන්න
+            continue 
+    
+    return "සමාවෙන්න, Models කිසිවක් ප්‍රතිචාර දක්වන්නේ නැත. කරුණාකර ඔබගේ API Key එක පරීක්ෂා කරන්න."
 
-# --- SIDEBAR OPTIONS ---
+# --- SIDEBAR UI ---
 with st.sidebar:
-    st.title("⚙️ DiNuX AI Control")
-    st.info("System Status: Operational ✅")
+    st.title("🤖 DiNuX AI Control")
+    st.markdown("---")
+    st.success("Auto-Fix Mode: ON 🛡️")
+    st.info("System: multi-model fallback active")
     
     st.markdown("---")
-    st.subheader("App Options")
-    st.selectbox("Chat Style", ["Professional", "Friendly", "Creative"])
-    
-    st.markdown("---")
-    st.subheader("About")
+    st.subheader("App Info")
     st.write("**Developer:** Dinush")
-    st.write("**Core:** Gemini 1.5 Flash")
-    st.write("**Auto-Fix:** Enabled 🛡️")
+    st.write("**Status:** Running")
     
-    st.markdown("---")
     if st.button("🗑️ Clear Chat History"):
         st.session_state.messages = []
         st.rerun()
 
-# --- CHAT INTERFACE ---
+# --- MAIN INTERFACE ---
 st.title("🤖 DiNuX AI Assistant")
-st.caption("Auto-healing and error-fixing system is active.")
+st.caption("I will think and answer your questions automatically fixing any bugs.")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Chat History පෙන්වීම
+# ඉතිහාසය පෙන්වීම
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# User Input
-if prompt := st.chat_input("මොනවා හරි අහන්න..."):
+# ප්‍රශ්නය ඇසීම
+if prompt := st.chat_input("ඔයාට දැනගන්න ඕන මොනවාද?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # AI Response with Error Handling
     with st.chat_message("assistant"):
-        with st.spinner("සකසමින් පවතිනවා..."):
-            # මෙතනදී error එකක් ආවොත් එය auto-fix කිරීමට උත්සාහ කරයි
-            full_response = safe_generate_content(prompt)
+        with st.spinner("හිතමින් පවතිනවා..."):
+            # මෙතනදී ඇප් එක හිතලා හොඳම model එක තෝරාගෙන පිළිතුරු දෙයි
+            full_response = get_ai_response(prompt)
             st.markdown(full_response)
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
